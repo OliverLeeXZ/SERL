@@ -42,7 +42,7 @@ class TrajectoryCollector:
         self.tokenizer = tokenizer
         self.processor = processor
 
-    def _should_collect_environment_feedback(self) -> bool:
+    def _should_collect_immediate_feedback(self) -> bool:
         actor_cfg = getattr(self.config, "actor_rollout_ref", None)
         if actor_cfg is None:
             return False
@@ -60,7 +60,7 @@ class TrajectoryCollector:
             sampling_mode = str(rlsd_cfg.get("sampling_mode", "legacy"))
             if sampling_mode != "legacy":
                 return True
-            return bool(rlsd_cfg.get("include_environment_feedback", False))
+            return bool(rlsd_cfg.get("include_immediate_feedback", rlsd_cfg.get("include_environment_feedback", False)))
         return False
 
     def _should_collect_rlsd_sampling_metadata(self) -> bool:
@@ -95,7 +95,7 @@ class TrajectoryCollector:
         return re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL)
 
     @staticmethod
-    def _normalize_environment_feedback(value):
+    def _normalize_immediate_feedback(value):
         if value is None:
             return None
         if isinstance(value, np.ndarray):
@@ -107,10 +107,10 @@ class TrajectoryCollector:
         value = value.strip()
         return value if value else None
 
-    def _collect_environment_feedback(self, next_obs: Dict, infos: List[Dict], batch_size: int) -> np.ndarray:
+    def _collect_immediate_feedback(self, next_obs: Dict, infos: List[Dict], batch_size: int) -> np.ndarray:
         anchor_obs = next_obs.get("anchor", None)
         text_obs = next_obs.get("text", None)
-        environment_feedback = []
+        immediate_feedback = []
 
         for idx in range(batch_size):
             candidates = []
@@ -128,12 +128,12 @@ class TrajectoryCollector:
 
             feedback_text = None
             for candidate in candidates:
-                feedback_text = self._normalize_environment_feedback(candidate)
+                feedback_text = self._normalize_immediate_feedback(candidate)
                 if feedback_text is not None:
                     break
-            environment_feedback.append(feedback_text)
+            immediate_feedback.append(feedback_text)
 
-        return np.array(environment_feedback, dtype=object)
+        return np.array(immediate_feedback, dtype=object)
 
     def _collect_next_observation_text(self, next_obs: Dict, infos: List[Dict], batch_size: int) -> np.ndarray:
         anchor_obs = next_obs.get("anchor", None)
@@ -151,7 +151,7 @@ class TrajectoryCollector:
 
             next_text = None
             for candidate in candidates:
-                next_text = self._normalize_environment_feedback(candidate)
+                next_text = self._normalize_immediate_feedback(candidate)
                 if next_text is not None:
                     break
             next_state_text.append(next_text)
@@ -506,8 +506,8 @@ class TrajectoryCollector:
                     batch_size=batch_size,
                 )
 
-            if self._should_collect_environment_feedback():
-                batch.non_tensor_batch["environment_feedback"] = self._collect_environment_feedback(
+            if self._should_collect_immediate_feedback():
+                batch.non_tensor_batch["immediate_feedback"] = self._collect_immediate_feedback(
                     next_obs=next_obs,
                     infos=infos,
                     batch_size=batch_size,

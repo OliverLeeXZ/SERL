@@ -153,27 +153,30 @@ class RayRLSDTrainer(RayPPOTrainer):
 
     # 取得feedback函数，应包含: 
     # Trajectory Level
-    # env feedback; env feedback throughout the trajectory; success student trajectory; LLMJ on tracjectory (w/wo reward)
+    # immediate feedback; immediate feedback throughout the trajectory; success student trajectory; LLMJ on tracjectory (w/wo reward)
     # Step Level:
-    # env feedback; next state; future trajectory; success student trajectory; LLMJ on action (may need to condition on full traj/next state to get feedback)
+    # immediate feedback; next state; future trajectory; success student trajectory; LLMJ on action (may need to condition on full traj/next state to get feedback)
     def _collect_feedback(
         self,
         batch: DataProto,                                                 # 既有tensor数据，也有非tensor元信息
         batch_size: int,
-        include_environment_feedback: bool,                               # 是否要真的采集环境反馈
+        include_immediate_feedback: bool,                               # 是否采集 immediate feedback
         reward_extra_infos_dict: Optional[dict[str, list]] = None,        # reward function 额外返回的信息，备用feedback来源
     ) -> list[Optional[str]]:
         feedback_list: list[Optional[str]] = [None] * batch_size          # 长度等于batch_size的最终反馈
-        if not include_environment_feedback:                              # 如果不启用环境反馈
+        if not include_immediate_feedback:
             return feedback_list
 
-        batch_feedback = batch.non_tensor_batch.get("environment_feedback", None)     # 对应step level
+        batch_feedback = batch.non_tensor_batch.get(
+            "immediate_feedback",
+            batch.non_tensor_batch.get("environment_feedback", None),
+        )
         if batch_feedback is not None:
             for idx in range(min(len(batch_feedback), batch_size)):
-                feedback_list[idx] = self._normalize_feedback(batch_feedback[idx])    # 标准化环境反馈（转为干净字符串），返回
+                feedback_list[idx] = self._normalize_feedback(batch_feedback[idx])
 
         if reward_extra_infos_dict is not None:                                       
-            raw_feedback = reward_extra_infos_dict.get("feedback", [])                # 如果没有环境反馈，再从reward_extra_infos_dict中补
+            raw_feedback = reward_extra_infos_dict.get("feedback", [])
             for idx in range(min(len(raw_feedback), batch_size)):
                 if feedback_list[idx] is None:
                     feedback_list[idx] = self._normalize_feedback(raw_feedback[idx])
@@ -278,7 +281,10 @@ class RayRLSDTrainer(RayPPOTrainer):
         else:
             rlsd_mask_values = list(rlsd_mask)
 
-        environment_feedbacks = batch.non_tensor_batch.get("environment_feedback", None)
+        immediate_feedbacks = batch.non_tensor_batch.get(
+            "immediate_feedback",
+            batch.non_tensor_batch.get("environment_feedback", None),
+        )
         next_observation_texts = batch.non_tensor_batch.get("next_observation_text", None)
         anchor_observations = batch.non_tensor_batch.get("anchor_obs", None)
         traj_judge_texts = batch.non_tensor_batch.get("traj_judge_text", None)
@@ -323,8 +329,8 @@ class RayRLSDTrainer(RayPPOTrainer):
                 "teacher_forward_input_text": self._truncate_log_text(teacher_forward_texts[idx], max_chars),
                 "teacher_target_response_text": self._truncate_log_text(response_texts[idx], max_chars),
                 "teacher_output_note": "Teacher does not generate a separate textual output; it scores the teacher_target_response_text.",
-                "environment_feedback": self._truncate_log_text(
-                    self._json_safe(environment_feedbacks[idx]) if environment_feedbacks is not None else None,
+                "immediate_feedback": self._truncate_log_text(
+                    self._json_safe(immediate_feedbacks[idx]) if immediate_feedbacks is not None else None,
                     max_chars,
                 ),
                 "next_observation_text": self._truncate_log_text(
@@ -435,7 +441,9 @@ class RayRLSDTrainer(RayPPOTrainer):
             feedback_list = self._collect_feedback(
                 batch=batch,
                 batch_size=batch_size,
-                include_environment_feedback=bool(cfg.get("include_environment_feedback", False)),
+                include_immediate_feedback=bool(
+                    cfg.get("include_immediate_feedback", cfg.get("include_environment_feedback", False))
+                ),
                 reward_extra_infos_dict=reward_extra_infos_dict,
             )
 
@@ -457,7 +465,12 @@ class RayRLSDTrainer(RayPPOTrainer):
                                                   # True表示，只有没有successful previous attempt时才使用feedback
                                                   # True： 有成功轨迹时，只用successful previous attempt （trajectory）
                                                   # Flase: 没有成功轨迹，才用feedback (step level)
-            feedback_only_without_solution = bool(cfg.get("environment_feedback_only_without_solution", False))
+            feedback_only_without_solution = bool(
+                cfg.get(
+                    "immediate_feedback_only_without_solution",
+                    cfg.get("environment_feedback_only_without_solution", False),
+                )
+            )
 
             # 逐个rollout构建teacher prompt
             for idx in range(batch_size):
@@ -493,7 +506,7 @@ class RayRLSDTrainer(RayPPOTrainer):
                     num_with_feedback_used += 1
                     feedback_section = cfg.get(
                         "feedback_template",
-                        "\nEnvironment feedback from the unsuccessful attempt:\n{feedback_raw}\n",       # 为什么一定是unsuccessful? 
+                        "\nImmediate feedback from the unsuccessful attempt:\n{feedback_raw}\n",       # 为什么一定是unsuccessful? 
                     ).format(feedback_raw=feedback_list[idx])
 
                 if has_solution or use_feedback:                                                         # Reprompt

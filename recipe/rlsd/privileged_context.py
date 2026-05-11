@@ -27,25 +27,25 @@ from judge_utils.remote_judge import (
 
 
 REFERENCE_NONLEGACY_MODES = {
-    "env_feedback",
+    "immediate_feedback",
     "next_observation",
     "future_trajectory",
-    "successful_sample_or_env_feedback",
-    "successful_sample_env_feedback",
+    "successful_sample_or_immediate_feedback",
+    "successful_sample_immediate_feedback",
     "successful_sample_next_observation",
     "successful_sample_future_trajectory",
-    "successful_sample_future_trajectory_env_feedback",
+    "successful_sample_future_trajectory_immediate_feedback",
     "successful_sample_future_trajectory_next_observation",
 }
 ANCHOR_NONLEGACY_MODES = {
-    "anchor_new_envfeedback",
+    "anchor_immediate_feedback",
     "anchor_next_observation",
     "anchor_future_trajectory",
-    "anchor_successful_sample_or_env_feedback",
-    "anchor_successful_sample_env_feedback",
+    "anchor_successful_sample_or_immediate_feedback",
+    "anchor_successful_sample_immediate_feedback",
     "anchor_successful_sample_next_observation",
     "anchor_successful_sample_future_trajectory",
-    "anchor_successful_sample_future_trajectory_env_feedback",
+    "anchor_successful_sample_future_trajectory_immediate_feedback",
     "anchor_successful_sample_future_trajectory_next_observation",
 }
 ACTION_JUDGE_NONLEGACY_MODES = set()
@@ -61,24 +61,43 @@ ALL_NONLEGACY_MODES = (
 )
 
 SAMPLING_MODE_ALIASES = {
-    "success_or_env_feedback": "successful_sample_or_env_feedback",
-    "successful_sample_or_feedback": "successful_sample_or_env_feedback",
-    "successful_trajectory_or_env_feedback": "successful_sample_or_env_feedback",
-    "successful_trajectory_env_feedback": "successful_sample_env_feedback",
+    "env_feedback": "immediate_feedback",
+    "environment_feedback": "immediate_feedback",
+    "success_or_env_feedback": "successful_sample_or_immediate_feedback",
+    "successful_sample_or_env_feedback": "successful_sample_or_immediate_feedback",
+    "successful_sample_env_feedback": "successful_sample_immediate_feedback",
+    "successful_sample_future_trajectory_env_feedback": "successful_sample_future_trajectory_immediate_feedback",
+    "successful_trajectory_or_env_feedback": "successful_sample_or_immediate_feedback",
+    "successful_trajectory_env_feedback": "successful_sample_immediate_feedback",
+    "successful_trajectory_future_trajectory_env_feedback": "successful_sample_future_trajectory_immediate_feedback",
+    "anchor_envfeedback": "anchor_immediate_feedback",
+    "anchor_env_feedback": "anchor_immediate_feedback",
+    "anchor_new_envfeedback": "anchor_immediate_feedback",
+    "anchor_new_env_feedback": "anchor_immediate_feedback",
+    "anchor_success_or_env_feedback": "anchor_successful_sample_or_immediate_feedback",
+    "anchor_anchor_success_or_env_feedback": "anchor_successful_sample_or_immediate_feedback",
+    "anchor_successful_sample_or_env_feedback": "anchor_successful_sample_or_immediate_feedback",
+    "anchor_successful_sample_env_feedback": "anchor_successful_sample_immediate_feedback",
+    "anchor_successful_sample_future_trajectory_env_feedback": "anchor_successful_sample_future_trajectory_immediate_feedback",
+    "anchor_successful_trajectory_or_env_feedback": "anchor_successful_sample_or_immediate_feedback",
+    "anchor_successful_trajectory_env_feedback": "anchor_successful_sample_immediate_feedback",
+    "anchor_successful_trajectory_future_trajectory_env_feedback": "anchor_successful_sample_future_trajectory_immediate_feedback",
+    "success_or_immediate_feedback": "successful_sample_or_immediate_feedback",
+    "successful_sample_or_feedback": "successful_sample_or_immediate_feedback",
+    "successful_trajectory_or_immediate_feedback": "successful_sample_or_immediate_feedback",
+    "successful_trajectory_immediate_feedback": "successful_sample_immediate_feedback",
     "successful_trajectory_next_observation": "successful_sample_next_observation",
     "successful_trajectory_future_trajectory": "successful_sample_future_trajectory",
-    "successful_trajectory_future_trajectory_env_feedback": "successful_sample_future_trajectory_env_feedback",
+    "successful_trajectory_future_trajectory_immediate_feedback": "successful_sample_future_trajectory_immediate_feedback",
     "successful_trajectory_future_trajectory_next_observation": "successful_sample_future_trajectory_next_observation",
-    "anchor_envfeedback": "anchor_new_envfeedback",
-    "anchor_env_feedback": "anchor_new_envfeedback",
-    "anchor_new_env_feedback": "anchor_new_envfeedback",
-    "anchor_success_or_env_feedback": "anchor_successful_sample_or_env_feedback",
-    "anchor_anchor_success_or_env_feedback": "anchor_successful_sample_or_env_feedback",
-    "anchor_successful_trajectory_or_env_feedback": "anchor_successful_sample_or_env_feedback",
-    "anchor_successful_trajectory_env_feedback": "anchor_successful_sample_env_feedback",
+    "anchor_immediate_feedback": "anchor_immediate_feedback",
+    "anchor_success_or_immediate_feedback": "anchor_successful_sample_or_immediate_feedback",
+    "anchor_anchor_success_or_immediate_feedback": "anchor_successful_sample_or_immediate_feedback",
+    "anchor_successful_trajectory_or_immediate_feedback": "anchor_successful_sample_or_immediate_feedback",
+    "anchor_successful_trajectory_immediate_feedback": "anchor_successful_sample_immediate_feedback",
     "anchor_successful_trajectory_next_observation": "anchor_successful_sample_next_observation",
     "anchor_successful_trajectory_future_trajectory": "anchor_successful_sample_future_trajectory",
-    "anchor_successful_trajectory_future_trajectory_env_feedback": "anchor_successful_sample_future_trajectory_env_feedback",
+    "anchor_successful_trajectory_future_trajectory_immediate_feedback": "anchor_successful_sample_future_trajectory_immediate_feedback",
     "anchor_successful_trajectory_future_trajectory_next_observation": "anchor_successful_sample_future_trajectory_next_observation",
 }
 
@@ -112,7 +131,7 @@ class StepRecord:
     prompt_text: str
     response_text: str
     anchor_obs: Any
-    environment_feedback: Optional[str]
+    immediate_feedback: Optional[str]
     next_state_text: Optional[str]
     sequence_reward: float
     episode_reward: Optional[float]
@@ -136,7 +155,7 @@ class TrajectoryContext:
     episode_length: float
     success: bool
     final_next_observation: Optional[str]
-    final_environment_feedback: Optional[str]
+    final_immediate_feedback: Optional[str]
 
 
 def normalize_optional_text(value: Any) -> Optional[str]:
@@ -296,6 +315,19 @@ def _get_non_tensor(batch, key: str, index: int, default: Any = None) -> Any:
     if index >= len(values):
         return default
     return values[index]
+
+
+def _get_immediate_feedback_from_step_data(step_data: dict[str, Any]) -> Any:
+    if "immediate_feedback" in step_data:
+        return step_data.get("immediate_feedback")
+    return step_data.get("environment_feedback")
+
+
+def _get_immediate_feedback_from_batch(batch, index: int) -> Any:
+    value = _get_non_tensor(batch, "immediate_feedback", index, default=None)
+    if value is not None:
+        return value
+    return _get_non_tensor(batch, "environment_feedback", index, default=None)
 
 
 def _slice_rows(rows: list[StepRecord], max_steps: int) -> list[StepRecord]:
@@ -490,7 +522,7 @@ def _build_trajectory_context_from_rows(
         episode_length=episode_length,
         success=success,
         final_next_observation=_extract_last_nonempty(rows, "next_state_text"),
-        final_environment_feedback=_extract_last_nonempty(rows, "environment_feedback"),
+        final_immediate_feedback=_extract_last_nonempty(rows, "immediate_feedback"),
     )
 
 
@@ -506,8 +538,8 @@ def _build_outcome_summary(
     ]
     if context.final_next_observation is not None:
         lines.append(f"Final observation after the last action:\n{context.final_next_observation}")
-    if include_feedback and context.final_environment_feedback is not None:
-        lines.append(f"Final environment feedback:\n{context.final_environment_feedback}")
+    if include_feedback and context.final_immediate_feedback is not None:
+        lines.append(f"Final immediate feedback:\n{context.final_immediate_feedback}")
     return "\n".join(lines)
 
 
@@ -727,12 +759,12 @@ def _build_anchor_candidate_context(
         ]
 
         if include_feedback:
-            best_feedback = normalize_optional_text(best_record.environment_feedback) if best_record else None
-            worst_feedback = normalize_optional_text(worst_record.environment_feedback) if worst_record else None
+            best_feedback = normalize_optional_text(best_record.immediate_feedback) if best_record else None
+            worst_feedback = normalize_optional_text(worst_record.immediate_feedback) if worst_record else None
             if best_feedback is not None:
-                lines.extend(["  best outcome env_feedback:", best_feedback])
+                lines.extend(["  best outcome immediate_feedback:", best_feedback])
             if worst_feedback is not None and worst_feedback != best_feedback:
-                lines.extend(["  worst outcome env_feedback:", worst_feedback])
+                lines.extend(["  worst outcome immediate_feedback:", worst_feedback])
 
         if include_next_observation:
             best_next = normalize_optional_text(best_record.next_state_text) if best_record else None
@@ -781,7 +813,7 @@ def _build_anchor_candidate_context(
     return "\n\n".join(parts)
 
 
-def _build_anchor_new_envfeedback_context(
+def _build_anchor_immediate_feedback_context(
     *,
     anchor_group_records: list[StepRecord],
     transform_action: Optional[Callable[[str], str]] = None,
@@ -793,7 +825,7 @@ def _build_anchor_new_envfeedback_context(
     first_action_order: dict[str, int] = {}
     for action_record in anchor_group_records:
         action_text = _normalize_candidate_action_text(action_record.response_text, transform_action)
-        feedback = normalize_optional_text(action_record.environment_feedback)
+        feedback = normalize_optional_text(action_record.immediate_feedback)
         if feedback is None:
             continue
         first_action_order.setdefault(action_text, action_record.batch_index)
@@ -1177,11 +1209,11 @@ def _build_action_judge_user_prompt(
         action_text,
     ]
 
-    if judge_include_feedback and record.environment_feedback is not None:
+    if judge_include_feedback and record.immediate_feedback is not None:
         sections.extend(
             [
-                "Immediate environment feedback after the action:",
-                record.environment_feedback,
+                "Immediate feedback after the action:",
+                record.immediate_feedback,
             ]
         )
 
@@ -1301,7 +1333,7 @@ def _rollout_step_to_record(step_data: dict[str, Any], index: int) -> StepRecord
         prompt_text=prompt_text,
         response_text=normalize_optional_text(step_data.get("response_text")) or "",
         anchor_obs=step_data.get("anchor_obs"),
-        environment_feedback=normalize_optional_text(step_data.get("environment_feedback")),
+        immediate_feedback=normalize_optional_text(_get_immediate_feedback_from_step_data(step_data)),
         next_state_text=normalize_optional_text(step_data.get("next_observation_text")),
         sequence_reward=_safe_float(step_data.get("rewards"), default=0.0),
         episode_reward=_safe_optional_float(step_data.get("episode_rewards")),
@@ -1420,7 +1452,7 @@ def build_step_records(
                 prompt_text=prompt_text,
                 response_text=response_texts[idx],
                 anchor_obs=_get_non_tensor(batch, "anchor_obs", idx),
-                environment_feedback=normalize_optional_text(_get_non_tensor(batch, "environment_feedback", idx)),
+                immediate_feedback=normalize_optional_text(_get_immediate_feedback_from_batch(batch, idx)),
                 next_state_text=normalize_optional_text(_get_non_tensor(batch, "next_observation_text", idx)),
                 sequence_reward=_safe_float(sequence_rewards[idx]),
                 episode_reward=_safe_optional_float(_get_non_tensor(batch, "episode_rewards", idx)),
@@ -1501,25 +1533,25 @@ def build_sampling_messages(
     remove_thinking_trace: Callable[[str], str],
 ):
     # Supported non-legacy modes:
-    # env_feedback
+    # immediate_feedback
     # next_observation
     # future_trajectory
-    # successful_sample_or_env_feedback
-    # successful_sample_env_feedback
+    # successful_sample_or_immediate_feedback
+    # successful_sample_immediate_feedback
     # successful_sample_next_observation
     # successful_sample_future_trajectory
-    # successful_sample_future_trajectory_env_feedback
+    # successful_sample_future_trajectory_immediate_feedback
     # successful_sample_future_trajectory_next_observation
     # judge_current_traj
     # judge_current_traj_on_successful_sample
-    # anchor_new_envfeedback
+    # anchor_immediate_feedback
     # anchor_next_observation
     # anchor_future_trajectory
-    # anchor_successful_sample_or_env_feedback
-    # anchor_successful_sample_env_feedback
+    # anchor_successful_sample_or_immediate_feedback
+    # anchor_successful_sample_immediate_feedback
     # anchor_successful_sample_next_observation
     # anchor_successful_sample_future_trajectory
-    # anchor_successful_sample_future_trajectory_env_feedback
+    # anchor_successful_sample_future_trajectory_immediate_feedback
     # anchor_successful_sample_future_trajectory_next_observation
 
     mode = normalize_sampling_mode(cfg.get("sampling_mode", "legacy"))
@@ -1600,8 +1632,8 @@ def build_sampling_messages(
             success_context.trajectory_text if success_context is not None else None,
         )
         feedback_section = _build_named_section(
-            "Environment feedback from the current step:",
-            record.environment_feedback,
+            "Immediate feedback from the current step:",
+            record.immediate_feedback,
         )
         next_observation_section = _build_named_section(
             "next observation after the current step:",
@@ -1644,7 +1676,7 @@ def build_sampling_messages(
         anchor_group_size = 0
         anchor_action_count = 0
 
-        if mode == "env_feedback":
+        if mode == "immediate_feedback":
             if feedback_section is not None:
                 sections = [feedback_section]
                 used_feedback = True
@@ -1656,14 +1688,14 @@ def build_sampling_messages(
             if future_trajectory_section is not None:
                 sections = [future_trajectory_section]
                 used_future = True
-        elif mode == "successful_sample_or_env_feedback":
+        elif mode == "successful_sample_or_immediate_feedback":
             if success_section is not None:
                 sections = [success_section]
                 used_success = True
             elif feedback_section is not None:
                 sections = [feedback_section]
                 used_feedback = True
-        elif mode == "successful_sample_env_feedback":
+        elif mode == "successful_sample_immediate_feedback":
             if success_section is not None and feedback_section is not None:
                 sections = [success_section, feedback_section]
                 used_success = True
@@ -1678,7 +1710,7 @@ def build_sampling_messages(
                 sections = [success_section, future_trajectory_section]
                 used_success = True
                 used_future = True
-        elif mode == "successful_sample_future_trajectory_env_feedback":
+        elif mode == "successful_sample_future_trajectory_immediate_feedback":
             if success_section is not None and future_trajectory_section is not None and feedback_section is not None:
                 sections = [success_section, future_trajectory_section, feedback_section]
                 used_success = True
@@ -1699,13 +1731,13 @@ def build_sampling_messages(
                     for item in anchor_group_records
                 }
             )
-            if mode == "anchor_new_envfeedback":
-                anchor_feedback_text = _build_anchor_new_envfeedback_context(
+            if mode == "anchor_immediate_feedback":
+                anchor_feedback_text = _build_anchor_immediate_feedback_context(
                     anchor_group_records=anchor_group_records,
                     transform_action=action_transform,
                 )
                 anchor_section = _build_named_section(
-                    "Environment feedback from the current step:",
+                    "Immediate feedback from the current step:",
                     anchor_feedback_text,
                 )
                 if anchor_section is not None:
@@ -1714,11 +1746,11 @@ def build_sampling_messages(
                     used_feedback = True
             else:
                 include_success = mode in {
-                    "anchor_successful_sample_or_env_feedback",
-                    "anchor_successful_sample_env_feedback",
+                    "anchor_successful_sample_or_immediate_feedback",
+                    "anchor_successful_sample_immediate_feedback",
                     "anchor_successful_sample_next_observation",
                     "anchor_successful_sample_future_trajectory",
-                    "anchor_successful_sample_future_trajectory_env_feedback",
+                    "anchor_successful_sample_future_trajectory_immediate_feedback",
                     "anchor_successful_sample_future_trajectory_next_observation",
                 }
                 success_context = None
@@ -1736,10 +1768,10 @@ def build_sampling_messages(
                     )
 
                 include_anchor_feedback = mode in {
-                    "anchor_successful_sample_env_feedback",
-                    "anchor_successful_sample_future_trajectory_env_feedback",
+                    "anchor_successful_sample_immediate_feedback",
+                    "anchor_successful_sample_future_trajectory_immediate_feedback",
                 }
-                if mode == "anchor_successful_sample_or_env_feedback":
+                if mode == "anchor_successful_sample_or_immediate_feedback":
                     include_anchor_feedback = success_context is None
                 include_anchor_next_observation = mode in {
                     "anchor_next_observation",
@@ -1749,7 +1781,7 @@ def build_sampling_messages(
                 include_anchor_future = mode in {
                     "anchor_future_trajectory",
                     "anchor_successful_sample_future_trajectory",
-                    "anchor_successful_sample_future_trajectory_env_feedback",
+                    "anchor_successful_sample_future_trajectory_immediate_feedback",
                     "anchor_successful_sample_future_trajectory_next_observation",
                 }
 

@@ -24,25 +24,25 @@ actor_rollout_ref:
     rlsd:
       # Supported modes:
       # legacy
-      # env_feedback
+      # immediate_feedback
       # next_observation
       # future_trajectory
-      # successful_sample_or_env_feedback
-      # successful_sample_env_feedback
+      # successful_sample_or_immediate_feedback
+      # successful_sample_immediate_feedback
       # successful_sample_next_observation
       # successful_sample_future_trajectory
-      # successful_sample_future_trajectory_env_feedback
+      # successful_sample_future_trajectory_immediate_feedback
       # successful_sample_future_trajectory_next_observation
       # judge_current_traj
       # judge_current_traj_on_successful_sample
-      # anchor_new_envfeedback
+      # anchor_immediate_feedback
       # anchor_next_observation
       # anchor_future_trajectory
-      # anchor_successful_sample_or_env_feedback
-      # anchor_successful_sample_env_feedback
+      # anchor_successful_sample_or_immediate_feedback
+      # anchor_successful_sample_immediate_feedback
       # anchor_successful_sample_next_observation
       # anchor_successful_sample_future_trajectory
-      # anchor_successful_sample_future_trajectory_env_feedback
+      # anchor_successful_sample_future_trajectory_immediate_feedback
       # anchor_successful_sample_future_trajectory_next_observation
       sampling_mode: legacy
       # Trajectory rendering for future/current/successful trajectory context.
@@ -57,11 +57,11 @@ actor_rollout_ref:
       reprompt_truncation: right
       dont_reprompt_on_self_success: true
       remove_thinking_from_demonstration: true
-      include_environment_feedback: true
-      environment_feedback_only_without_solution: true
+      include_immediate_feedback: true
+      immediate_feedback_only_without_solution: true
       reprompt_template: "{prompt}{solution}{feedback}\n\nCorrectly solve the current task.\n"
       solution_template: "\nSuccessful attempt:\n{successful_previous_attempt}\n"
-      feedback_template: "\nEnvironment feedback from the unsuccessful attempt:\n{feedback_raw}\n"
+      feedback_template: "\nImmediate feedback from the unsuccessful attempt:\n{feedback_raw}\n"
       privileged_context_template: "{prompt}\n\n{privileged_context}\n\nCorrectly solve the current task.\n"
       dump_teacher_log: true
       teacher_log_path: rlsd_teacher_log.jsonl
