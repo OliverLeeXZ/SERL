@@ -1,0 +1,94 @@
+hydra:
+  searchpath:
+    - file://verl/trainer/config
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+data:
+  gen_batch_size: ${data.train_batch_size}
+
+reward_model:
+  reward_manager: episode
+
+algorithm:
+  adv_estimator: grpo
+
+actor_rollout_ref:
+  actor:
+    policy_loss:
+      # SERL currently exposes only the action-token-mask RLSD loss.
+      loss_mode: rlsd_action_mask
+    use_kl_loss: false
+    rlsd:
+      # Supported modes:
+      # legacy
+      # env_feedback
+      # next_observation
+      # future_trajectory
+      # successful_sample_or_env_feedback
+      # successful_sample_env_feedback
+      # successful_sample_next_observation
+      # successful_sample_future_trajectory
+      # successful_sample_future_trajectory_env_feedback
+      # successful_sample_future_trajectory_next_observation
+      # judge_current_traj
+      # judge_current_traj_on_successful_sample
+      # anchor_new_envfeedback
+      # anchor_next_observation
+      # anchor_future_trajectory
+      # anchor_successful_sample_or_env_feedback
+      # anchor_successful_sample_env_feedback
+      # anchor_successful_sample_next_observation
+      # anchor_successful_sample_future_trajectory
+      # anchor_successful_sample_future_trajectory_env_feedback
+      # anchor_successful_sample_future_trajectory_next_observation
+      sampling_mode: legacy
+      # Trajectory rendering for future/current/successful trajectory context.
+      # response: action/response series only; observation_action: observation + action pairs.
+      trajectory_format: response
+      success_reward_threshold: 1.0
+      mixing_lambda: 0.5
+      lambda_decay_steps: 50
+      weight_clip: 0.2
+      teacher_sync_interval: 10
+      max_reprompt_len: ${data.max_prompt_length}
+      reprompt_truncation: right
+      dont_reprompt_on_self_success: true
+      remove_thinking_from_demonstration: true
+      include_environment_feedback: true
+      environment_feedback_only_without_solution: true
+      reprompt_template: "{prompt}{solution}{feedback}\n\nCorrectly solve the current task.\n"
+      solution_template: "\nSuccessful attempt:\n{successful_previous_attempt}\n"
+      feedback_template: "\nEnvironment feedback from the unsuccessful attempt:\n{feedback_raw}\n"
+      privileged_context_template: "{prompt}\n\n{privileged_context}\n\nCorrectly solve the current task.\n"
+      dump_teacher_log: true
+      teacher_log_path: rlsd_teacher_log.jsonl
+      teacher_log_dir: teacher
+      teacher_log_split_by_step: true
+      teacher_log_every_n_steps: 1
+      teacher_log_max_text_chars: 0
+      max_traj_context_steps: 0
+      max_future_context_steps: 0
+      anchor_enable_similarity: false
+      anchor_similarity_thresh: 0.95
+      judge_api_key: ""
+      judge_api_url: http://localhost:8000/v1
+      judge_model: ""
+      judge_fallback_model: null
+      judge_enable_thinking: false
+      judge_timeout: 180
+      judge_request_retries: 2
+      judge_max_tokens: 4096
+      judge_retry_max_tokens: 8192
+      judge_temperature: 0.0
+      judge_request_strict: false
+      judge_include_feedback: true
+      judge_max_concurrency: 32
+      judge_show_progress: true
+
+trainer:
+  project_name: verl-rlsd
+  val_only: false
+  val_before_train: false
