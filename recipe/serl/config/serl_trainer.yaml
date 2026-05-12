@@ -23,7 +23,7 @@ actor_rollout_ref:
     use_kl_loss: false
     serl:
       # Supported modes:
-      # legacy
+      # legacy (backward compatibility)
       # immediate_feedback
       # next_observation
       # future_trajectory
@@ -44,7 +44,7 @@ actor_rollout_ref:
       # anchor_successful_sample_future_trajectory
       # anchor_successful_sample_future_trajectory_immediate_feedback
       # anchor_successful_sample_future_trajectory_next_observation
-      sampling_mode: legacy
+      sampling_mode: immediate_feedback
       # Trajectory rendering for future/current/successful trajectory context.
       # response: action/response series only; observation_action: observation + action pairs.
       trajectory_format: response
