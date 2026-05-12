@@ -104,7 +104,10 @@ ENV/
 .ropeproject
 
 # vscode
-.vscode
+.vscode/
+
+# GitHub automation copied from upstream is not part of the SERL release package.
+.github/
 
 # Mac
 .DS_Store
@@ -131,4 +134,3 @@ outputs
 data/
 .tmp
 *ports
-
