@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Dict, Union, Any
+from typing import List, Dict, Union, Any, Tuple
 from collections import defaultdict
 import torch
 from functools import partial

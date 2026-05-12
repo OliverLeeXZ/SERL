@@ -126,6 +126,9 @@ ENV/
 logs
 log
 
+# local rjob submission scripts
+rjob/
+
 # nohup
 *.out
 outputs
