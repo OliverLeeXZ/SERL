@@ -350,6 +350,7 @@ The scripts expose common settings through environment variables:
 ## 👥 Contributors
 
 - LyuTianyi
+- Li Xiaozhe
 
 ## ✏️ Citation
 

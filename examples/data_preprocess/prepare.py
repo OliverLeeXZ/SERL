@@ -37,7 +37,7 @@ if __name__ == '__main__':
     """
     **NOTE**: This is a frequently asked question.
     We do NOT use the data in 'hiyouga/geometry3k', instead we only use it to indicate the modality and the data size.
-    See details: https://github.com/langfengQ/SERL?tab=readme-ov-file#2-data-preparation
+    See details: https://github.com/OliverLeeXZ/SERL
     """
 
     dataset = datasets.load_dataset(data_source)

@@ -134,7 +134,7 @@ If not included upstream, you may also need:
 
 ## Related links
 
-- [SERL](https://github.com/langfengQ/SERL)
+- [SERL](https://github.com/OliverLeeXZ/SERL)
 - [GiGPO paper](https://arxiv.org/abs/2505.10978)
 
 ```bibtex
