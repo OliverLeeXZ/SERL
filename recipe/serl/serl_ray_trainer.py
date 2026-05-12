@@ -7,19 +7,19 @@ from typing import Any, Optional
 import numpy as np
 import torch
 
-from recipe.rlsd.privileged_context import (
+from recipe.serl.privileged_context import (
     build_sampling_messages,
     normalize_optional_text,
     normalize_sampling_mode,
-    should_use_rlsd_teacher_for_step,
+    should_use_serl_teacher_for_step,
 )
 from verl import DataProto
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 from verl.utils.model import compute_position_id_with_mask
 
 
-RLSD_LOSS_MODES = {"rlsd_action_mask"}
-RLSD_ACTION_MASK_LOSS_MODES = {"rlsd_action_mask"}
+SERL_LOSS_MODES = {"serl_action_mask"}
+SERL_ACTION_MASK_LOSS_MODES = {"serl_action_mask"}
 _ACTION_SPAN_PATTERNS = [
     re.compile(r"<action\b[^>]*>(.*?)</action>", re.IGNORECASE | re.DOTALL),
     re.compile(r"\[action>(.*?)</action>\]?", re.IGNORECASE | re.DOTALL),
@@ -29,11 +29,11 @@ _UNCLOSED_ACTION_SPAN_PATTERN = re.compile(r"<action\b[^>]*>(.*)$", re.IGNORECAS
 _WEBSHOP_ACTION_PATTERN = re.compile(r"(?:search|click)\[[^\]\n]*\]", re.IGNORECASE)
 
 
-class RayRLSDTrainer(RayPPOTrainer):
+class RaySERLTrainer(RayPPOTrainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tokenizer.padding_side = "left"
-        self.tokenizer.truncation_side = self.config.actor_rollout_ref.actor.get("rlsd", {}).get(
+        self.tokenizer.truncation_side = self.config.actor_rollout_ref.actor.get("serl", {}).get(
             "reprompt_truncation",
             "right",
         )
@@ -196,9 +196,9 @@ class RayRLSDTrainer(RayPPOTrainer):
         if isinstance(value, (np.integer, np.floating)):
             return value.item()
         if isinstance(value, (list, tuple)):
-            return [RayRLSDTrainer._json_safe(item) for item in value]
+            return [RaySERLTrainer._json_safe(item) for item in value]
         if isinstance(value, dict):
-            return {str(key): RayRLSDTrainer._json_safe(item) for key, item in value.items()}
+            return {str(key): RaySERLTrainer._json_safe(item) for key, item in value.items()}
         return value
 
     @staticmethod
@@ -218,7 +218,7 @@ class RayRLSDTrainer(RayPPOTrainer):
         return decoded_texts
 
     def _teacher_log_path(self, cfg: Any) -> str:
-        relative_or_absolute_path = str(cfg.get("teacher_log_path", "rlsd_teacher_log.jsonl"))
+        relative_or_absolute_path = str(cfg.get("teacher_log_path", "serl_teacher_log.jsonl"))
         if os.path.isabs(relative_or_absolute_path):
             log_path = relative_or_absolute_path
         else:
@@ -244,7 +244,7 @@ class RayRLSDTrainer(RayPPOTrainer):
         teacher_prompt: dict[str, torch.Tensor],
         teacher_input_ids: torch.Tensor,
         teacher_attention_mask: torch.Tensor,
-        rlsd_mask: list[float] | torch.Tensor,
+        serl_mask: list[float] | torch.Tensor,
         cfg: Any,
     ) -> None:
         if not bool(cfg.get("dump_teacher_log", True)):
@@ -276,10 +276,10 @@ class RayRLSDTrainer(RayPPOTrainer):
             teacher_attention_mask,
         )
 
-        if isinstance(rlsd_mask, torch.Tensor):
-            rlsd_mask_values = rlsd_mask.detach().cpu().tolist()
+        if isinstance(serl_mask, torch.Tensor):
+            serl_mask_values = serl_mask.detach().cpu().tolist()
         else:
-            rlsd_mask_values = list(rlsd_mask)
+            serl_mask_values = list(serl_mask)
 
         immediate_feedbacks = batch.non_tensor_batch.get(
             "immediate_feedback",
@@ -318,7 +318,7 @@ class RayRLSDTrainer(RayPPOTrainer):
                 )
                 if rollout_successes is not None
                 else None,
-                "rlsd_mask": float(rlsd_mask_values[idx]),
+                "serl_mask": float(serl_mask_values[idx]),
                 "student_input_messages": self._json_safe(raw_prompts[idx]),
                 "student_input_text": self._truncate_log_text(str(student_input_text), max_chars),
                 "student_forward_input_text": self._truncate_log_text(student_forward_texts[idx], max_chars),
@@ -385,16 +385,16 @@ class RayRLSDTrainer(RayPPOTrainer):
         reward_tensor: torch.Tensor,
         reward_extra_infos_dict: Optional[dict[str, list]] = None,
     ):
-        cfg = self.config.actor_rollout_ref.actor.get("rlsd", None)
+        cfg = self.config.actor_rollout_ref.actor.get("serl", None)
         # 1. 什么是vanilla loss_mode？
         loss_mode = self.config.actor_rollout_ref.actor.policy_loss.get("loss_mode", "vanilla")    
-        if cfg is None or loss_mode not in RLSD_LOSS_MODES:
+        if cfg is None or loss_mode not in SERL_LOSS_MODES:
             return None
 
         if "uid" not in batch.non_tensor_batch:
-            raise ValueError("RLSD requires grouped rollouts with non_tensor_batch['uid'].")
+            raise ValueError("SERL requires grouped rollouts with non_tensor_batch['uid'].")
         if "raw_prompt" not in batch.non_tensor_batch:
-            raise ValueError("RLSD requires data.return_raw_chat=True so raw prompts can be reprompted.")
+            raise ValueError("SERL requires data.return_raw_chat=True so raw prompts can be reprompted.")
 
         device = batch.batch["input_ids"].device
         responses = batch.batch["responses"]                    # 每行对应一个样本/step的模型输出
@@ -402,7 +402,7 @@ class RayRLSDTrainer(RayPPOTrainer):
         batch_size = responses.shape[0]                         # trajectory 中的step？ 不是原始task数？
         sampling_mode = normalize_sampling_mode(cfg.get("sampling_mode", "legacy"))
 
-        teacher_active = should_use_rlsd_teacher_for_step(
+        teacher_active = should_use_serl_teacher_for_step(
             cfg=cfg,
             training_global_step=int(getattr(self, "global_steps", 0)),
             critic_warmup=int(self.config.trainer.get("critic_warmup", 0)),
@@ -412,19 +412,19 @@ class RayRLSDTrainer(RayPPOTrainer):
                 "Decay into GRPO, No LLM Request "
                 f"(mode={sampling_mode}, step={int(getattr(self, 'global_steps', 0))})"
             )
-            rlsd_mask = torch.zeros(batch_size, dtype=torch.float32, device=device)
+            serl_mask = torch.zeros(batch_size, dtype=torch.float32, device=device)
             metrics = {
-                "rlsd/reprompt_sample_fraction": 0.0,
-                "rlsd/teacher_inactive_after_decay": 1.0,
+                "serl/reprompt_sample_fraction": 0.0,
+                "serl/teacher_inactive_after_decay": 1.0,
             }
             teacher_tensors = {
                 "teacher_input_ids": batch.batch["input_ids"],
                 "teacher_attention_mask": batch.batch["attention_mask"],
                 "teacher_position_ids": batch.batch["position_ids"],
-                "rlsd_mask": rlsd_mask,
+                "serl_mask": serl_mask,
             }
-            if loss_mode in RLSD_ACTION_MASK_LOSS_MODES:
-                teacher_tensors["rlsd_action_mask"] = torch.zeros_like(
+            if loss_mode in SERL_ACTION_MASK_LOSS_MODES:
+                teacher_tensors["serl_action_mask"] = torch.zeros_like(
                     response_mask,
                     dtype=torch.float32,
                     device=device,
@@ -456,7 +456,7 @@ class RayRLSDTrainer(RayPPOTrainer):
                 success_reward_threshold=float(cfg.get("success_reward_threshold", 1.0)),  
             )
 
-            rlsd_mask = []                        # 每个样本是否用了teacher priviledged信息
+            serl_mask = []                        # 每个样本是否用了teacher priviledged信息
             messages = []                         # teacher prompt列表
             num_with_solution = 0                 # 多少样本拿到了successful previous attempt
             num_with_feedback_available = 0       # 多少样本有feedback可用
@@ -519,7 +519,7 @@ class RayRLSDTrainer(RayPPOTrainer):
                     reprompt_text = prompt_text
 
                 messages.append(prefix_messages + [{"role": "user", "content": reprompt_text}])         # 构造好的messages？
-                rlsd_mask.append(float(has_solution or use_feedback))                                   # 有没有使用rlsd的额外上下文
+                serl_mask.append(float(has_solution or use_feedback))                                   # 有没有使用serl的额外上下文
 
             unique_uids = list(dict.fromkeys(list(batch.non_tensor_batch["uid"])))                      # 保持uid原顺序
             success_group_fraction = 0.0                                                                # 成功group占比
@@ -528,17 +528,17 @@ class RayRLSDTrainer(RayPPOTrainer):
                 success_group_fraction = sum(1 for uid in unique_uids if len(success_by_uid.get(uid, [])) > 0) / len(unique_uids)
 
             metrics = {
-                "rlsd/success_group_fraction": success_group_fraction,
-                "rlsd/success_sample_fraction": num_with_solution / max(batch_size, 1),
-                "rlsd/feedback_available_fraction": num_with_feedback_available / max(batch_size, 1),
-                "rlsd/feedback_used_fraction": num_with_feedback_used / max(batch_size, 1),
-                "rlsd/reprompt_sample_fraction": float(np.mean(rlsd_mask)) if rlsd_mask else 0.0,
+                "serl/success_group_fraction": success_group_fraction,
+                "serl/success_sample_fraction": num_with_solution / max(batch_size, 1),
+                "serl/feedback_available_fraction": num_with_feedback_available / max(batch_size, 1),
+                "serl/feedback_used_fraction": num_with_feedback_used / max(batch_size, 1),
+                "serl/reprompt_sample_fraction": float(np.mean(serl_mask)) if serl_mask else 0.0,
             }
         else:
             # messages：teacher chat prompt
-            # rlsd_mask: 每个样本是否使用了priviledged context
+            # serl_mask: 每个样本是否使用了priviledged context
             # metrics: 统计指标
-            messages, rlsd_mask, metrics = build_sampling_messages(
+            messages, serl_mask, metrics = build_sampling_messages(
                 batch=batch,
                 reward_tensor=reward_tensor,
                 response_texts=response_texts,
@@ -576,22 +576,22 @@ class RayRLSDTrainer(RayPPOTrainer):
             dim=1,
         )
         teacher_position_ids = compute_position_id_with_mask(teacher_attention_mask)
-        rlsd_mask = torch.tensor(rlsd_mask, dtype=torch.float32, device=device)
-        metrics["rlsd/reprompt_sample_fraction"] = rlsd_mask.float().mean().item() if batch_size > 0 else 0.0
-        if loss_mode in RLSD_ACTION_MASK_LOSS_MODES:
-            rlsd_action_mask = self._build_action_token_mask(
+        serl_mask = torch.tensor(serl_mask, dtype=torch.float32, device=device)
+        metrics["serl/reprompt_sample_fraction"] = serl_mask.float().mean().item() if batch_size > 0 else 0.0
+        if loss_mode in SERL_ACTION_MASK_LOSS_MODES:
+            serl_action_mask = self._build_action_token_mask(
                 responses=responses,
                 response_texts=response_texts,
                 response_mask=response_mask,
             )
-            action_tokens = rlsd_action_mask.bool() & response_mask.bool()
+            action_tokens = serl_action_mask.bool() & response_mask.bool()
             valid_tokens = response_mask.bool()
-            metrics["rlsd/action_token_fraction"] = (
+            metrics["serl/action_token_fraction"] = (
                 action_tokens.float().sum() / valid_tokens.float().sum().clamp_min(1.0)
             ).item()
-            active_rows = rlsd_mask.bool()
+            active_rows = serl_mask.bool()
             parsed_rows = action_tokens.any(dim=-1)
-            metrics["rlsd/action_parse_failure_fraction"] = (
+            metrics["serl/action_parse_failure_fraction"] = (
                 (active_rows & ~parsed_rows).float().sum() / active_rows.float().sum().clamp_min(1.0)
             ).item()
 
@@ -603,7 +603,7 @@ class RayRLSDTrainer(RayPPOTrainer):
             teacher_prompt=teacher_prompt,
             teacher_input_ids=teacher_input_ids,
             teacher_attention_mask=teacher_attention_mask,
-            rlsd_mask=rlsd_mask,
+            serl_mask=serl_mask,
             cfg=cfg,
         )
 
@@ -611,9 +611,9 @@ class RayRLSDTrainer(RayPPOTrainer):
             "teacher_input_ids": teacher_input_ids,
             "teacher_attention_mask": teacher_attention_mask,
             "teacher_position_ids": teacher_position_ids,
-            "rlsd_mask": rlsd_mask,
+            "serl_mask": serl_mask,
         }
-        if loss_mode in RLSD_ACTION_MASK_LOSS_MODES:
-            teacher_tensors["rlsd_action_mask"] = rlsd_action_mask
+        if loss_mode in SERL_ACTION_MASK_LOSS_MODES:
+            teacher_tensors["serl_action_mask"] = serl_action_mask
         teacher_batch = DataProto.from_dict(tensors=teacher_tensors)
         return teacher_batch, metrics

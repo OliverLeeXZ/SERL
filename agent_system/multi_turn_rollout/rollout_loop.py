@@ -25,7 +25,7 @@ import uuid
 from agent_system.multi_turn_rollout.utils import process_image, to_list_of_dict, torch_to_numpy, filter_group_data
 from agent_system.environments import EnvironmentManagerBase
 from typing import List, Dict
-from recipe.rlsd.privileged_context import attach_rollout_level_judges
+from recipe.serl.privileged_context import attach_rollout_level_judges
 from verl.protocol import pad_dataproto_to_divisor, unpad_dataproto
 
 class TrajectoryCollector:
@@ -53,17 +53,17 @@ class TrajectoryCollector:
         if policy_loss_cfg is None:
             return False
         loss_mode = policy_loss_cfg.get("loss_mode", "vanilla")
-        if loss_mode == "rlsd_action_mask":
-            rlsd_cfg = actor_cfg.get("rlsd", None)
-            if rlsd_cfg is None:
+        if loss_mode == "serl_action_mask":
+            serl_cfg = actor_cfg.get("serl", None)
+            if serl_cfg is None:
                 return False
-            sampling_mode = str(rlsd_cfg.get("sampling_mode", "legacy"))
+            sampling_mode = str(serl_cfg.get("sampling_mode", "legacy"))
             if sampling_mode != "legacy":
                 return True
-            return bool(rlsd_cfg.get("include_immediate_feedback", rlsd_cfg.get("include_environment_feedback", False)))
+            return bool(serl_cfg.get("include_immediate_feedback", serl_cfg.get("include_environment_feedback", False)))
         return False
 
-    def _should_collect_rlsd_sampling_metadata(self) -> bool:
+    def _should_collect_serl_sampling_metadata(self) -> bool:
         actor_cfg = getattr(self.config, "actor_rollout_ref", None)
         if actor_cfg is None:
             return False
@@ -71,14 +71,14 @@ class TrajectoryCollector:
         if actor_cfg is None:
             return False
         policy_loss_cfg = actor_cfg.get("policy_loss", None)
-        if policy_loss_cfg is None or policy_loss_cfg.get("loss_mode", "vanilla") != "rlsd_action_mask":
+        if policy_loss_cfg is None or policy_loss_cfg.get("loss_mode", "vanilla") != "serl_action_mask":
             return False
-        rlsd_cfg = actor_cfg.get("rlsd", None)
-        if rlsd_cfg is None:
+        serl_cfg = actor_cfg.get("serl", None)
+        if serl_cfg is None:
             return False
-        return str(rlsd_cfg.get("sampling_mode", "legacy")) != "legacy"
+        return str(serl_cfg.get("sampling_mode", "legacy")) != "legacy"
 
-    def _get_rlsd_cfg(self):
+    def _get_serl_cfg(self):
         actor_cfg = getattr(self.config, "actor_rollout_ref", None)
         if actor_cfg is None:
             return None
@@ -86,9 +86,9 @@ class TrajectoryCollector:
         if actor_cfg is None:
             return None
         policy_loss_cfg = actor_cfg.get("policy_loss", None)
-        if policy_loss_cfg is None or policy_loss_cfg.get("loss_mode", "vanilla") != "rlsd_action_mask":
+        if policy_loss_cfg is None or policy_loss_cfg.get("loss_mode", "vanilla") != "serl_action_mask":
             return None
-        return actor_cfg.get("rlsd", None)
+        return actor_cfg.get("serl", None)
 
     @staticmethod
     def _remove_thinking_trace(text: str) -> str:
@@ -498,7 +498,7 @@ class TrajectoryCollector:
             else:
                 batch.non_tensor_batch['is_action_valid'] = np.ones(batch_size, dtype=bool)
 
-            if self._should_collect_rlsd_sampling_metadata():
+            if self._should_collect_serl_sampling_metadata():
                 batch.non_tensor_batch["step_id"] = np.full(batch_size, _step, dtype=np.int32)
                 batch.non_tensor_batch["next_observation_text"] = self._collect_next_observation_text(
                     next_obs=next_obs,
@@ -662,8 +662,8 @@ class TrajectoryCollector:
         assert len(total_batch_list) == len(total_traj_uid)
         assert len(total_batch_list) == len(totoal_tool_callings)
 
-        rlsd_cfg = self._get_rlsd_cfg()
-        if rlsd_cfg is not None:
+        serl_cfg = self._get_serl_cfg()
+        if serl_cfg is not None:
             training_global_step = 0
             if isinstance(gen_batch.meta_info, dict):
                 training_global_step = int(gen_batch.meta_info.get("training_global_step", 0))
@@ -671,7 +671,7 @@ class TrajectoryCollector:
                 total_batch_list=total_batch_list,
                 episode_rewards=total_episode_rewards,
                 episode_lengths=total_episode_lengths,
-                cfg=rlsd_cfg,
+                cfg=serl_cfg,
                 remove_thinking_trace=self._remove_thinking_trace,
                 training_global_step=training_global_step,
                 critic_warmup=int(self.config.trainer.get("critic_warmup", 0)),

@@ -16,11 +16,11 @@ import hydra
 import ray
 from omegaconf import OmegaConf
 
-from recipe.rlsd.rlsd_ray_trainer import RayRLSDTrainer
+from recipe.serl.serl_ray_trainer import RaySERLTrainer
 from verl.trainer.constants_ppo import get_ppo_ray_runtime_env
 
 
-@hydra.main(config_path="config", config_name="rlsd_trainer", version_base=None)
+@hydra.main(config_path="config", config_name="serl_trainer", version_base=None)
 def main(config):
     run_ppo(config)
 
@@ -52,11 +52,11 @@ class TaskRunner:
         OmegaConf.resolve(config)
 
         if config.algorithm.use_kl_in_reward or config.actor_rollout_ref.actor.use_kl_loss:
-            raise ValueError("SERL RLSD recipe does not support KL regularization. Please disable it.")
+            raise ValueError("SERL recipe does not support KL regularization. Please disable it.")
         if config.actor_rollout_ref.rollout.mode != "sync":
-            raise ValueError("SERL RLSD recipe requires rollout.mode=sync.")
+            raise ValueError("SERL recipe requires rollout.mode=sync.")
         if config.actor_rollout_ref.actor.strategy not in ["fsdp", "fsdp2"]:
-            raise NotImplementedError("SERL RLSD recipe currently supports only FSDP/FSDP2.")
+            raise NotImplementedError("SERL recipe currently supports only FSDP/FSDP2.")
 
         local_path = copy_to_local(
             config.actor_rollout_ref.model.path,
@@ -97,7 +97,7 @@ class TaskRunner:
 
         reward_manager_name = config.reward_model.get("reward_manager", "episode")
         if reward_manager_name != "episode":
-            raise NotImplementedError(f"Unsupported reward_manager for RLSD: {reward_manager_name}")
+            raise NotImplementedError(f"Unsupported reward_manager for SERL: {reward_manager_name}")
 
         reward_fn = EpisodeRewardManager(tokenizer=tokenizer, num_examine=0, normalize_by_length=False)
         val_reward_fn = EpisodeRewardManager(tokenizer=tokenizer, num_examine=1, normalize_by_length=False)
@@ -108,7 +108,7 @@ class TaskRunner:
         val_dataset = create_rl_dataset(config.data.val_files, config.data, tokenizer, processor)
         train_sampler = create_rl_sampler(config.data, train_dataset)
 
-        trainer = RayRLSDTrainer(
+        trainer = RaySERLTrainer(
             config=config,
             tokenizer=tokenizer,
             processor=processor,

@@ -183,7 +183,7 @@ def normalize_trajectory_format(trajectory_format: str) -> str:
     if normalized in {"observation_action", "obs_action", "observation-action"}:
         return "observation_action"
     raise ValueError(
-        "rlsd.trajectory_format must be either 'response' or 'observation_action', "
+        "serl.trajectory_format must be either 'response' or 'observation_action', "
         f"got {trajectory_format!r}."
     )
 
@@ -192,14 +192,14 @@ def is_nonlegacy_sampling_mode(mode: str) -> bool:
     return normalize_sampling_mode(mode) in ALL_NONLEGACY_MODES
 
 
-def estimate_rlsd_update_step(*, training_global_step: int, critic_warmup: int) -> int:
+def estimate_serl_update_step(*, training_global_step: int, critic_warmup: int) -> int:
     training_global_step = max(int(training_global_step), 0)
     critic_warmup = max(int(critic_warmup), 0)
     first_update_global_step = max(critic_warmup, 1)
     return max(0, training_global_step - first_update_global_step)
 
 
-def compute_rlsd_effective_lambda_for_step(
+def compute_serl_effective_lambda_for_step(
     *,
     cfg: Any,
     training_global_step: int,
@@ -211,12 +211,12 @@ def compute_rlsd_effective_lambda_for_step(
 
     lambda_decay_steps = int(cfg.get("lambda_decay_steps", 0))
     if lambda_decay_steps < 0:
-        raise ValueError(f"rlsd.lambda_decay_steps must be non-negative, got {lambda_decay_steps}.")
+        raise ValueError(f"serl.lambda_decay_steps must be non-negative, got {lambda_decay_steps}.")
 
     if lambda_decay_steps == 0:
         return mixing_lambda
 
-    update_step = estimate_rlsd_update_step(
+    update_step = estimate_serl_update_step(
         training_global_step=training_global_step,
         critic_warmup=critic_warmup,
     )
@@ -224,13 +224,13 @@ def compute_rlsd_effective_lambda_for_step(
     return mixing_lambda * lambda_scale
 
 
-def should_use_rlsd_teacher_for_step(
+def should_use_serl_teacher_for_step(
     *,
     cfg: Any,
     training_global_step: int,
     critic_warmup: int,
 ) -> bool:
-    return compute_rlsd_effective_lambda_for_step(
+    return compute_serl_effective_lambda_for_step(
         cfg=cfg,
         training_global_step=training_global_step,
         critic_warmup=critic_warmup,
@@ -868,7 +868,7 @@ def _call_remote_judge(
     except (requests.RequestException, ValueError) as exc:
         if strict:
             raise
-        print(f"[RLSD][judge] {failure_label} failed: {exc}")
+        print(f"[SERL][judge] {failure_label} failed: {exc}")
         return None
 
     normalized = normalize_optional_text(judge_text)
@@ -884,7 +884,7 @@ def _call_remote_judge(
     if normalized is None:
         if strict:
             raise ValueError(f"{failure_label} returned an empty judge response.")
-        print(f"[RLSD][judge] {failure_label} returned an empty judge response.")
+        print(f"[SERL][judge] {failure_label} returned an empty judge response.")
         return None
     return normalized
 
@@ -966,7 +966,7 @@ def _collect_action_judge_results(
 
     progress_bar = tqdm(
         total=len(records),
-        desc=f"[RLSD][judge] {mode} ({max_workers} workers)",
+        desc=f"[SERL][judge] {mode} ({max_workers} workers)",
         disable=(not show_progress),
         dynamic_ncols=True,
         leave=False,
@@ -996,7 +996,7 @@ def _collect_action_judge_results(
                     if judge_cfg["judge_request_strict"]:
                         raise
                     print(
-                        "[RLSD][judge] "
+                        "[SERL][judge] "
                         f"unexpected failure for batch_index={batch_index} (mode={mode}): {exc}"
                     )
                     results[batch_index] = None
@@ -1148,7 +1148,7 @@ def _collect_rollout_judge_results(
     show_progress = bool(cfg.get("judge_show_progress", True))
     progress_bar = tqdm(
         total=len(tasks),
-        desc=f"[RLSD][traj_judge] {mode} ({max_workers} workers)",
+        desc=f"[SERL][traj_judge] {mode} ({max_workers} workers)",
         disable=(not show_progress),
         dynamic_ncols=True,
         leave=False,
@@ -1175,7 +1175,7 @@ def _collect_rollout_judge_results(
                     if judge_cfg["judge_request_strict"]:
                         raise
                     print(
-                        "[RLSD][judge] "
+                        "[SERL][judge] "
                         f"unexpected rollout judge failure for traj_index={traj_index} "
                         f"(mode={mode}): {exc}"
                     )
@@ -1373,7 +1373,7 @@ def attach_rollout_level_judges(
     mode = normalize_sampling_mode(cfg.get("sampling_mode", "legacy"))
     if not requires_rollout_level_judge_cache(mode):
         return
-    if not should_use_rlsd_teacher_for_step(
+    if not should_use_serl_teacher_for_step(
         cfg=cfg,
         training_global_step=training_global_step,
         critic_warmup=critic_warmup,
@@ -1565,16 +1565,16 @@ def build_sampling_messages(
     anchor_enable_similarity = bool(cfg.get("anchor_enable_similarity", False))
     anchor_similarity_thresh = float(cfg.get("anchor_similarity_thresh", 0.95))
     if anchor_enable_similarity and not 0.0 < anchor_similarity_thresh < 1.0:
-        raise ValueError("rlsd.anchor_similarity_thresh must be in (0, 1) when anchor similarity is enabled.")
+        raise ValueError("serl.anchor_similarity_thresh must be in (0, 1) when anchor similarity is enabled.")
     privileged_context_template = cfg.get(
         "privileged_context_template",
         "{prompt}\n\n{privileged_context}\n\nCorrectly solve the current task.\n",
     )
 
     if mode == "legacy":
-        raise ValueError("build_sampling_messages only supports non-legacy RLSD sampling modes.")
+        raise ValueError("build_sampling_messages only supports non-legacy SERL sampling modes.")
     if mode not in ALL_NONLEGACY_MODES:
-        raise ValueError(f"Unsupported RLSD sampling_mode: {mode}")
+        raise ValueError(f"Unsupported SERL sampling_mode: {mode}")
 
     records = build_step_records(
         batch=batch,
@@ -1868,28 +1868,28 @@ def build_sampling_messages(
 
     batch_size = max(len(records), 1)
     metrics = {
-        "rlsd/context_available_fraction": counts["with_context"] / batch_size,
-        "rlsd/reprompt_sample_fraction": counts["with_context"] / batch_size,
+        "serl/context_available_fraction": counts["with_context"] / batch_size,
+        "serl/reprompt_sample_fraction": counts["with_context"] / batch_size,
     }
     if counts["success_reference"] > 0:
-        metrics["rlsd/success_reference_fraction"] = counts["success_reference"] / batch_size
+        metrics["serl/success_reference_fraction"] = counts["success_reference"] / batch_size
     if counts["feedback"] > 0:
-        metrics["rlsd/feedback_reference_fraction"] = counts["feedback"] / batch_size
+        metrics["serl/feedback_reference_fraction"] = counts["feedback"] / batch_size
     if counts["next_observation"] > 0:
         next_observation_fraction = counts["next_observation"] / batch_size
-        metrics["rlsd/next_observation_reference_fraction"] = next_observation_fraction
-        metrics["rlsd/next_state_reference_fraction"] = next_observation_fraction
+        metrics["serl/next_observation_reference_fraction"] = next_observation_fraction
+        metrics["serl/next_state_reference_fraction"] = next_observation_fraction
     if counts["future"] > 0:
-        metrics["rlsd/future_reference_fraction"] = counts["future"] / batch_size
+        metrics["serl/future_reference_fraction"] = counts["future"] / batch_size
     if counts["anchor"] > 0:
-        metrics["rlsd/anchor_reference_fraction"] = counts["anchor"] / batch_size
-        metrics["rlsd/anchor_group_size_mean"] = counts["anchor_group_size_sum"] / counts["anchor"]
-        metrics["rlsd/anchor_action_count_mean"] = counts["anchor_action_count_sum"] / counts["anchor"]
+        metrics["serl/anchor_reference_fraction"] = counts["anchor"] / batch_size
+        metrics["serl/anchor_group_size_mean"] = counts["anchor_group_size_sum"] / counts["anchor"]
+        metrics["serl/anchor_action_count_mean"] = counts["anchor_action_count_sum"] / counts["anchor"]
     if counts["action_judge"] > 0:
-        metrics["rlsd/action_judge_reference_fraction"] = counts["action_judge"] / batch_size
+        metrics["serl/action_judge_reference_fraction"] = counts["action_judge"] / batch_size
     if counts["traj_judge"] > 0:
-        metrics["rlsd/traj_judge_reference_fraction"] = counts["traj_judge"] / batch_size
+        metrics["serl/traj_judge_reference_fraction"] = counts["traj_judge"] / batch_size
     if counts["all_completed"] > 0:
-        metrics["rlsd/all_completed_reference_fraction"] = counts["all_completed"] / batch_size
+        metrics["serl/all_completed_reference_fraction"] = counts["all_completed"] / batch_size
 
     return messages, masks, metrics

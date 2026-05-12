@@ -33,7 +33,7 @@ from verl.trainer.ppo.core_algos import (
     agg_loss,
     compute_policy_loss,
     compute_policy_loss_gspo,
-    compute_rlsd_action_mask_reweighted_advantages,
+    compute_serl_action_mask_reweighted_advantages,
     kl_penalty,
 )
 from verl.utils.debug import GPUMemoryLogger
@@ -56,17 +56,17 @@ __all__ = ["DataParallelPPOActor"]
 logger = logging.getLogger(__file__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
-RLSD_LOSS_MODES = {"rlsd_action_mask"}
+SERL_LOSS_MODES = {"serl_action_mask"}
 
 
-def _compute_rlsd_effective_lambda(rlsd_cfg, update_step: int) -> float:
-    mixing_lambda = float(rlsd_cfg.get("mixing_lambda", 1.0))
+def _compute_serl_effective_lambda(serl_cfg, update_step: int) -> float:
+    mixing_lambda = float(serl_cfg.get("mixing_lambda", 1.0))
     if mixing_lambda <= 0.0:
         return 0.0
 
-    lambda_decay_steps = int(rlsd_cfg.get("lambda_decay_steps", 0))
+    lambda_decay_steps = int(serl_cfg.get("lambda_decay_steps", 0))
     if lambda_decay_steps < 0:
-        raise ValueError(f"rlsd.lambda_decay_steps must be non-negative, got {lambda_decay_steps}.")
+        raise ValueError(f"serl.lambda_decay_steps must be non-negative, got {lambda_decay_steps}.")
     if lambda_decay_steps == 0:
         return mixing_lambda
 
@@ -74,11 +74,11 @@ def _compute_rlsd_effective_lambda(rlsd_cfg, update_step: int) -> float:
     return mixing_lambda * lambda_scale
 
 
-def _should_run_rlsd_teacher(rlsd_cfg, update_step: int, rlsd_mask: Optional[torch.Tensor]) -> tuple[bool, float]:
-    effective_lambda = _compute_rlsd_effective_lambda(rlsd_cfg, update_step)
-    if effective_lambda <= 0.0 or rlsd_mask is None:
+def _should_run_serl_teacher(serl_cfg, update_step: int, serl_mask: Optional[torch.Tensor]) -> tuple[bool, float]:
+    effective_lambda = _compute_serl_effective_lambda(serl_cfg, update_step)
+    if effective_lambda <= 0.0 or serl_mask is None:
         return False, effective_lambda
-    return bool(torch.any(rlsd_mask.bool()).item()), effective_lambda
+    return bool(torch.any(serl_mask.bool()).item()), effective_lambda
 
 
 class DataParallelPPOActor(BasePPOActor):
@@ -272,18 +272,18 @@ class DataParallelPPOActor(BasePPOActor):
 
     def _update_teacher(self):
         loss_mode = self.config.policy_loss.get("loss_mode", "vanilla")
-        if loss_mode not in RLSD_LOSS_MODES:
+        if loss_mode not in SERL_LOSS_MODES:
             return
 
-        rlsd_cfg = self.config.get("rlsd", None)
-        if rlsd_cfg is None:
+        serl_cfg = self.config.get("serl", None)
+        if serl_cfg is None:
             return
         if self.teacher_module is None or self.teacher_module is self.actor_module:
-            raise ValueError("loss_mode=rlsd_action_mask requires a separate teacher_module in the actor worker.")
+            raise ValueError("loss_mode=serl_action_mask requires a separate teacher_module in the actor worker.")
 
-        teacher_sync_interval = int(rlsd_cfg.get("teacher_sync_interval", 10))
+        teacher_sync_interval = int(serl_cfg.get("teacher_sync_interval", 10))
         if teacher_sync_interval <= 0:
-            raise ValueError(f"rlsd.teacher_sync_interval must be positive, got {teacher_sync_interval}.")
+            raise ValueError(f"serl.teacher_sync_interval must be positive, got {teacher_sync_interval}.")
 
         self._policy_update_step += 1
         if self._policy_update_step % teacher_sync_interval != 0:
@@ -383,18 +383,18 @@ class DataParallelPPOActor(BasePPOActor):
         temperature = data.meta_info["temperature"]  # temperature must be in the data.meta_info to avoid silent error
         multi_turn = data.meta_info.get("multi_turn", False)
         loss_mode = self.config.policy_loss.get("loss_mode", "vanilla")
-        rlsd_enabled = loss_mode in RLSD_LOSS_MODES
-        rlsd_cfg = self.config.get("rlsd", None)
-        if rlsd_enabled and rlsd_cfg is None:
-            raise ValueError(f"loss_mode={loss_mode} requires actor.rlsd config.")
-        rlsd_teacher_active = False
-        rlsd_effective_lambda = 0.0
-        if rlsd_enabled:
-            batch_rlsd_mask = data.batch["rlsd_mask"] if "rlsd_mask" in data.batch.keys() else None
-            rlsd_teacher_active, rlsd_effective_lambda = _should_run_rlsd_teacher(
-                rlsd_cfg,
+        serl_enabled = loss_mode in SERL_LOSS_MODES
+        serl_cfg = self.config.get("serl", None)
+        if serl_enabled and serl_cfg is None:
+            raise ValueError(f"loss_mode={loss_mode} requires actor.serl config.")
+        serl_teacher_active = False
+        serl_effective_lambda = 0.0
+        if serl_enabled:
+            batch_serl_mask = data.batch["serl_mask"] if "serl_mask" in data.batch.keys() else None
+            serl_teacher_active, serl_effective_lambda = _should_run_serl_teacher(
+                serl_cfg,
                 self._policy_update_step,
-                batch_rlsd_mask,
+                batch_serl_mask,
             )
 
         select_keys = ["responses", "input_ids", "attention_mask", "position_ids", "old_log_probs", "advantages"]
@@ -402,13 +402,13 @@ class DataParallelPPOActor(BasePPOActor):
             select_keys.append("loss_mask")
         if self.config.use_kl_loss:
             select_keys.append("ref_log_prob")
-        if rlsd_teacher_active:
+        if serl_teacher_active:
             select_keys.extend(["teacher_input_ids", "teacher_attention_mask", "teacher_position_ids"])
-        if rlsd_enabled:
-            select_keys.extend(["rlsd_mask", "rlsd_action_mask"])
+        if serl_enabled:
+            select_keys.extend(["serl_mask", "serl_action_mask"])
         batch = data.select(batch_keys=select_keys).batch
         has_multi_modal_inputs = "multi_modal_inputs" in data.non_tensor_batch.keys()
-        if rlsd_teacher_active and has_multi_modal_inputs:
+        if serl_teacher_active and has_multi_modal_inputs:
             raise NotImplementedError("SERL action-mask teacher loss does not support multimodal training.")
 
         # Split to make minibatch iterator for updating the actor
@@ -455,8 +455,8 @@ class DataParallelPPOActor(BasePPOActor):
 
                     old_log_prob = data["old_log_probs"]
                     advantages = data["advantages"]
-                    rlsd_mask = data.get("rlsd_mask", None) if rlsd_enabled else None
-                    rlsd_action_mask = data.get("rlsd_action_mask", None) if rlsd_enabled else None
+                    serl_mask = data.get("serl_mask", None) if serl_enabled else None
+                    serl_action_mask = data.get("serl_action_mask", None) if serl_enabled else None
 
                     clip_ratio = self.config.clip_ratio
                     clip_ratio_low = self.config.clip_ratio_low if self.config.clip_ratio_low is not None else clip_ratio
@@ -472,9 +472,9 @@ class DataParallelPPOActor(BasePPOActor):
                     entropy, log_prob = self._forward_micro_batch(micro_batch=data, temperature=temperature, calculate_entropy=calculate_entropy)
 
                     pg_metrics = {}
-                    if rlsd_teacher_active:
+                    if serl_teacher_active:
                         if self.teacher_module is None or self.teacher_module is self.actor_module:
-                            raise ValueError("loss_mode=rlsd_action_mask requires a separate teacher_module in the actor worker.")
+                            raise ValueError("loss_mode=serl_action_mask requires a separate teacher_module in the actor worker.")
                         teacher_inputs = {
                             "responses": data["responses"],
                             "input_ids": data["teacher_input_ids"],
@@ -488,15 +488,15 @@ class DataParallelPPOActor(BasePPOActor):
                                 calculate_entropy=False,
                                 module=self.teacher_module,
                             )
-                        token_advantages, pg_metrics = compute_rlsd_action_mask_reweighted_advantages(
+                        token_advantages, pg_metrics = compute_serl_action_mask_reweighted_advantages(
                             advantages=advantages,
                             student_log_probs=log_prob,
                             teacher_log_probs=teacher_log_prob,
                             response_mask=response_mask,
-                            rlsd_config=rlsd_cfg,
+                            serl_config=serl_cfg,
                             update_step=self._policy_update_step,
-                            rlsd_mask=rlsd_mask,
-                            rlsd_action_mask=rlsd_action_mask,
+                            serl_mask=serl_mask,
+                            serl_action_mask=serl_action_mask,
                         )
                         pg_loss, pg_clipfrac, ppo_kl, pg_clipfrac_lower = compute_policy_loss(
                             old_log_prob=old_log_prob,
@@ -509,17 +509,17 @@ class DataParallelPPOActor(BasePPOActor):
                             clip_ratio_c=clip_ratio_c,
                             loss_agg_mode=loss_agg_mode,
                         )
-                    elif rlsd_enabled:
+                    elif serl_enabled:
                         pg_metrics = {
-                            "rlsd_action_mask/effective_lambda": rlsd_effective_lambda,
-                            "rlsd_action_mask/weight_mean": 1.0,
-                            "rlsd_action_mask/weight_max": 1.0,
-                            "rlsd_action_mask/weight_min": 1.0,
-                            "rlsd_action_mask/delta_abs_mean": 0.0,
-                            "rlsd_action_mask/candidate_fraction": 0.0,
-                            "rlsd_action_mask/selected_fraction": 0.0,
-                            "rlsd_action_mask/clipped_fraction": 0.0,
-                            "rlsd_action_mask/empty_target_batch": 1.0,
+                            "serl_action_mask/effective_lambda": serl_effective_lambda,
+                            "serl_action_mask/weight_mean": 1.0,
+                            "serl_action_mask/weight_max": 1.0,
+                            "serl_action_mask/weight_min": 1.0,
+                            "serl_action_mask/delta_abs_mean": 0.0,
+                            "serl_action_mask/candidate_fraction": 0.0,
+                            "serl_action_mask/selected_fraction": 0.0,
+                            "serl_action_mask/clipped_fraction": 0.0,
+                            "serl_action_mask/empty_target_batch": 1.0,
                         }
                         pg_loss, pg_clipfrac, ppo_kl, pg_clipfrac_lower = compute_policy_loss(
                             old_log_prob=old_log_prob,

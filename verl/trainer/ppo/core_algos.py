@@ -429,14 +429,14 @@ def agg_loss(loss_mat: torch.Tensor, loss_mask: torch.Tensor, loss_agg_mode: str
     return loss
 
 
-def _rlsd_effective_lambda(rlsd_config: Any, update_step: int) -> float:
-    mixing_lambda = float(rlsd_config.get("mixing_lambda", 1.0))
+def _serl_effective_lambda(serl_config: Any, update_step: int) -> float:
+    mixing_lambda = float(serl_config.get("mixing_lambda", 1.0))
     if not 0.0 <= mixing_lambda <= 1.0:
-        raise ValueError(f"rlsd.mixing_lambda must be in [0, 1], got {mixing_lambda}.")
+        raise ValueError(f"serl.mixing_lambda must be in [0, 1], got {mixing_lambda}.")
 
-    lambda_decay_steps = int(rlsd_config.get("lambda_decay_steps", 0))
+    lambda_decay_steps = int(serl_config.get("lambda_decay_steps", 0))
     if lambda_decay_steps < 0:
-        raise ValueError(f"rlsd.lambda_decay_steps must be non-negative, got {lambda_decay_steps}.")
+        raise ValueError(f"serl.lambda_decay_steps must be non-negative, got {lambda_decay_steps}.")
     if lambda_decay_steps == 0:
         return mixing_lambda
 
@@ -444,24 +444,24 @@ def _rlsd_effective_lambda(rlsd_config: Any, update_step: int) -> float:
     return mixing_lambda * lambda_scale
 
 
-def compute_rlsd_action_mask_reweighted_advantages(
+def compute_serl_action_mask_reweighted_advantages(
     *,
     advantages: torch.Tensor,
     student_log_probs: torch.Tensor,
     teacher_log_probs: torch.Tensor,
     response_mask: torch.Tensor,
-    rlsd_config: Any,
+    serl_config: Any,
     update_step: int,
-    rlsd_mask: Optional[torch.Tensor] = None,
-    rlsd_action_mask: Optional[torch.Tensor] = None,
+    serl_mask: Optional[torch.Tensor] = None,
+    serl_action_mask: Optional[torch.Tensor] = None,
 ):
     """Reweight PPO advantages only on parsed action tokens."""
 
-    weight_clip = float(rlsd_config.get("weight_clip", 0.2))
+    weight_clip = float(serl_config.get("weight_clip", 0.2))
     if weight_clip < 0.0:
-        raise ValueError(f"rlsd.weight_clip must be non-negative, got {weight_clip}.")
+        raise ValueError(f"serl.weight_clip must be non-negative, got {weight_clip}.")
 
-    effective_lambda = _rlsd_effective_lambda(rlsd_config, update_step)
+    effective_lambda = _serl_effective_lambda(serl_config, update_step)
     delta = (teacher_log_probs - student_log_probs).detach()
     signed_delta = torch.sign(advantages.detach()) * delta
     signed_delta = signed_delta.clamp(min=-20.0, max=20.0)
@@ -469,17 +469,17 @@ def compute_rlsd_action_mask_reweighted_advantages(
     clipped_weights = weights.clamp(min=1.0 - weight_clip, max=1.0 + weight_clip)
 
     base_mask = response_mask.bool()
-    if rlsd_mask is not None:
-        base_mask = base_mask & rlsd_mask.unsqueeze(-1).bool()
+    if serl_mask is not None:
+        base_mask = base_mask & serl_mask.unsqueeze(-1).bool()
 
-    if rlsd_action_mask is None:
-        rlsd_action_mask = torch.zeros_like(response_mask, dtype=torch.bool)
-    if rlsd_action_mask.shape != response_mask.shape:
+    if serl_action_mask is None:
+        serl_action_mask = torch.zeros_like(response_mask, dtype=torch.bool)
+    if serl_action_mask.shape != response_mask.shape:
         raise ValueError(
-            f"rlsd_action_mask must have shape {tuple(response_mask.shape)}, "
-            f"got {tuple(rlsd_action_mask.shape)}."
+            f"serl_action_mask must have shape {tuple(response_mask.shape)}, "
+            f"got {tuple(serl_action_mask.shape)}."
         )
-    selected_mask = base_mask & rlsd_action_mask.bool()
+    selected_mask = base_mask & serl_action_mask.bool()
 
     blended_weights = torch.ones_like(clipped_weights)
     if selected_mask.any():
@@ -500,27 +500,27 @@ def compute_rlsd_action_mask_reweighted_advantages(
             ((valid_weights <= clip_low + 1e-6) | (valid_weights >= clip_high - 1e-6)).float().mean().item()
         )
         metrics = {
-            "rlsd_action_mask/effective_lambda": effective_lambda,
-            "rlsd_action_mask/weight_mean": valid_weights.mean().item(),
-            "rlsd_action_mask/weight_max": valid_weights.max().item(),
-            "rlsd_action_mask/weight_min": valid_weights.min().item(),
-            "rlsd_action_mask/delta_abs_mean": valid_delta_abs.mean().item(),
-            "rlsd_action_mask/candidate_fraction": (selected_count / base_count).item(),
-            "rlsd_action_mask/selected_fraction": (selected_count / base_count).item(),
-            "rlsd_action_mask/clipped_fraction": clipped_fraction,
-            "rlsd_action_mask/empty_target_batch": 0.0,
+            "serl_action_mask/effective_lambda": effective_lambda,
+            "serl_action_mask/weight_mean": valid_weights.mean().item(),
+            "serl_action_mask/weight_max": valid_weights.max().item(),
+            "serl_action_mask/weight_min": valid_weights.min().item(),
+            "serl_action_mask/delta_abs_mean": valid_delta_abs.mean().item(),
+            "serl_action_mask/candidate_fraction": (selected_count / base_count).item(),
+            "serl_action_mask/selected_fraction": (selected_count / base_count).item(),
+            "serl_action_mask/clipped_fraction": clipped_fraction,
+            "serl_action_mask/empty_target_batch": 0.0,
         }
     else:
         metrics = {
-            "rlsd_action_mask/effective_lambda": effective_lambda,
-            "rlsd_action_mask/weight_mean": 1.0,
-            "rlsd_action_mask/weight_max": 1.0,
-            "rlsd_action_mask/weight_min": 1.0,
-            "rlsd_action_mask/delta_abs_mean": 0.0,
-            "rlsd_action_mask/candidate_fraction": 0.0,
-            "rlsd_action_mask/selected_fraction": 0.0,
-            "rlsd_action_mask/clipped_fraction": 0.0,
-            "rlsd_action_mask/empty_target_batch": 1.0,
+            "serl_action_mask/effective_lambda": effective_lambda,
+            "serl_action_mask/weight_mean": 1.0,
+            "serl_action_mask/weight_max": 1.0,
+            "serl_action_mask/weight_min": 1.0,
+            "serl_action_mask/delta_abs_mean": 0.0,
+            "serl_action_mask/candidate_fraction": 0.0,
+            "serl_action_mask/selected_fraction": 0.0,
+            "serl_action_mask/clipped_fraction": 0.0,
+            "serl_action_mask/empty_target_batch": 1.0,
         }
 
     return token_advantages, metrics

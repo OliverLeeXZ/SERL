@@ -586,7 +586,7 @@ class ActorRolloutRefWorker(Worker):
                 self.config.ref.use_remove_padding = use_remove_padding
                 self.config.ref.use_fused_kernels = use_fused_kernels
             self.ref_policy = DataParallelPPOActor(config=self.config.ref, actor_module=self.ref_module_fsdp)
-            if self._is_actor and self.config.actor.policy_loss.get("loss_mode", "vanilla") == "rlsd_action_mask":
+            if self._is_actor and self.config.actor.policy_loss.get("loss_mode", "vanilla") == "serl_action_mask":
                 self.actor.teacher_module = self.ref_module_fsdp
 
         if self._is_actor:

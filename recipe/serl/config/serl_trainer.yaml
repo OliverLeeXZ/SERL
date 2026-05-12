@@ -18,10 +18,10 @@ algorithm:
 actor_rollout_ref:
   actor:
     policy_loss:
-      # SERL currently exposes only the action-token-mask RLSD loss.
-      loss_mode: rlsd_action_mask
+      # SERL currently exposes only the action-token-mask SERL loss.
+      loss_mode: serl_action_mask
     use_kl_loss: false
-    rlsd:
+    serl:
       # Supported modes:
       # legacy
       # immediate_feedback
@@ -64,7 +64,7 @@ actor_rollout_ref:
       feedback_template: "\nImmediate feedback from the unsuccessful attempt:\n{feedback_raw}\n"
       privileged_context_template: "{prompt}\n\n{privileged_context}\n\nCorrectly solve the current task.\n"
       dump_teacher_log: true
-      teacher_log_path: rlsd_teacher_log.jsonl
+      teacher_log_path: serl_teacher_log.jsonl
       teacher_log_dir: teacher
       teacher_log_split_by_step: true
       teacher_log_every_n_steps: 1
@@ -89,6 +89,6 @@ actor_rollout_ref:
       judge_show_progress: true
 
 trainer:
-  project_name: verl-rlsd
+  project_name: verl-serl
   val_only: false
   val_before_train: false
