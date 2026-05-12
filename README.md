@@ -1,167 +1,71 @@
 <p align="center">
-    <img src="./docs/serl/SERL ICON.png" alt="SERL logo" width="90%">
+  <img src="./docs/serl/SERL%20ICON.png" alt="SERL logo" width="86%">
 </p>
 
-# SERL
+# SERL: Selective Hindsight Distillation for Long-Horizon LLM Agents
 
-SERL is a reinforcement-learning recipe for long-horizon LLM agents. It uses environment feedback as a training-time credit-assignment signal while keeping policy optimization anchored to task rewards.
+<p align="center">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/Python-3.10%20%7C%203.12-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/Tasks-ALFWorld%20%7C%20WebShop-0ea5e9.svg" alt="Tasks">
+  <img src="https://img.shields.io/badge/Base-veRL-64748b.svg" alt="veRL">
+</p>
 
-This repository focuses on two text-agent environments:
+SERL is a reinforcement-learning recipe for text-based LLM agents. It uses multi-feedback from agent-environment rollouts to build a teacher signal, then applies that signal selectively to action tokens while leaving chain-of-thought and formatting tokens under the original GRPO objective.
+
+This release focuses on two long-horizon agent environments:
 
 - ALFWorld
 - WebShop
 
-The main entrypoints are:
+Main entrypoints:
 
 - `recipe/serl/run_alfworld.sh`
 - `recipe/serl/run_webshop.sh`
 
-## Contents
+## News
 
-- [Features](#features)
-- [Repository Layout](#repository-layout)
-- [Method Overview](#method-overview)
-- [Feedback Modes](#feedback-modes)
-- [Anchor Modes](#anchor-modes)
-- [LLM-Judged Feedback](#llm-judged-feedback)
-- [Trajectory Format](#trajectory-format)
-- [Installation](#installation)
-- [Quickstart](#quickstart)
-- [Default Training Settings](#default-training-settings)
-- [Acknowledgement](#acknowledgement)
+- **[2026.05]** Initial SERL training recipe with ALFWorld and WebShop launch scripts.
+- **[2026.05]** Multi-feedback sources, anchor-level feedback, LLM-judged feedback, and two trajectory formats are supported.
 
-## Features
+## Highlights
 
-- Step-wise multi-turn agent-environment interaction.
-- SERL action-mask policy loss: `actor_rollout_ref.actor.policy_loss.loss_mode=serl_action_mask`.
-- Configurable training-time feedback from immediate feedback, next observation, future trajectory, successful trajectory, and mixed variants.
-- Anchor variants that place feedback around semantically meaningful state groups.
-- LLM-judged feedback modes for compact trajectory diagnostics.
-- Two trajectory organization formats: `response` and `observation_action`.
-- Dedicated scripts for ALFWorld and WebShop.
+1. **Multi-feedback hindsight signal.** SERL can condition the teacher on immediate feedback, next observation, future trajectory, successful trajectory, current trajectory, or combinations of these signals.
+2. **Action-token-only distillation.** The teacher signal reweights action tokens, while thinking tokens keep the normal GRPO full-response credit. This matches the method design in which feedback should guide what the agent does, not overwrite every reasoning token.
+3. **Flexible feedback granularity.** SERL supports step-level feedback and anchor-level variants that group semantically related states before applying hindsight feedback.
+4. **Practical agent recipes.** The repository keeps a compact open-source surface: one ALFWorld script, one WebShop script, and a single SERL config.
+
+## Method Overview
+
+SERL targets the sparse-reward setting common in interactive agent tasks. During rollout, each sampled trajectory contains states, actions, task rewards, and immediate feedback. SERL builds privileged hindsight contexts from these records and asks a synchronized teacher policy to score the student's action tokens under that feedback.
+
+<p align="center">
+  <img src="./docs/serl/figure1.png" alt="SERL multi-feedback sources and granularity" width="100%">
+</p>
+
+Figure 1 illustrates the feedback design. SERL can draw feedback from the current step, the next observation, the current trajectory, the future trajectory, and successful trajectories. It can also switch between step-level and anchor-level granularity.
+
+<p align="center">
+  <img src="./docs/serl/figure2.png" alt="SERL selective action-token distillation" width="100%">
+</p>
+
+Figure 2 shows the selective distillation objective. Teacher-student probability gaps are converted into bounded action-token weights. Thinking tokens are masked from teacher reweighting, while action tokens are promoted, suppressed, or kept unchanged according to the teacher signal.
+
+Original figure PDFs are kept for high-resolution use:
+
+- [Figure 1 PDF](./docs/serl/Figure1.pdf)
+- [Figure 2 PDF](./docs/serl/Figure2.pdf)
 
 ## Repository Layout
 
 ```text
-recipe/serl/                         SERL training recipe, config, and launch scripts
+recipe/serl/                         SERL training recipe, config, trainer, and launch scripts
 recipe/serl/run_alfworld.sh          ALFWorld launch script
 recipe/serl/run_webshop.sh           WebShop launch script
 agent_system/environments/           Multi-turn agent environment wrappers
 judge_utils/                         Utilities for LLM-judged feedback
 examples/data_preprocess/prepare.py  Text-mode parquet preparation
-docs/serl/                           SERL logo assets
-```
-
-## Method Overview
-
-SERL separates three implementation choices:
-
-1. **Feedback source**  
-   The feedback context can come from immediate feedback, next observations, future trajectories, successful trajectories, current trajectories, or combinations of these signals.
-
-2. **Feedback placement**  
-   Feedback can be applied at every transition or concentrated around anchor states.
-
-3. **Feedback strength**  
-   Feedback-conditioned teacher scores are converted into bounded, action-token-level weights. Reasoning and formatting tokens keep the original reward-driven update.
-
-The task reward still determines whether sampled behavior should be reinforced or suppressed. Feedback adjusts the locality and magnitude of that update.
-
-## Feedback Modes
-
-Set the feedback source with `SAMPLING_MODE=<mode>`. The scripts default to `immediate_feedback`.
-
-Implementation names use `successful_sample` for a successful trajectory reference.
-
-| `SAMPLING_MODE` | Feedback source |
-| --- | --- |
-| `immediate_feedback` | immediate feedback |
-| `next_observation` | next observation |
-| `future_trajectory` | future trajectory |
-| `successful_sample_or_immediate_feedback` | successful trajectory or immediate feedback |
-| `successful_sample_immediate_feedback` | successful trajectory and immediate feedback |
-| `successful_sample_next_observation` | successful trajectory and next observation |
-| `successful_sample_future_trajectory` | successful trajectory and future trajectory |
-| `successful_sample_future_trajectory_immediate_feedback` | successful trajectory, future trajectory, and immediate feedback |
-| `successful_sample_future_trajectory_next_observation` | successful trajectory, future trajectory, and next observation |
-
-Examples:
-
-```bash
-SAMPLING_MODE=immediate_feedback bash recipe/serl/run_alfworld.sh
-SAMPLING_MODE=successful_sample_immediate_feedback bash recipe/serl/run_webshop.sh
-SAMPLING_MODE=successful_sample_future_trajectory_next_observation bash recipe/serl/run_webshop.sh
-```
-
-## Anchor Modes
-
-Anchor placement is enabled by using the `anchor_` prefix. To disable anchor placement, use the corresponding non-anchor mode.
-
-Supported anchor modes:
-
-```text
-anchor_immediate_feedback
-anchor_next_observation
-anchor_future_trajectory
-anchor_successful_sample_or_immediate_feedback
-anchor_successful_sample_immediate_feedback
-anchor_successful_sample_next_observation
-anchor_successful_sample_future_trajectory
-anchor_successful_sample_future_trajectory_immediate_feedback
-anchor_successful_sample_future_trajectory_next_observation
-```
-
-Examples:
-
-```bash
-SAMPLING_MODE=anchor_immediate_feedback bash recipe/serl/run_alfworld.sh
-SAMPLING_MODE=anchor_successful_sample_immediate_feedback bash recipe/serl/run_webshop.sh
-```
-
-Optional similarity filtering can be enabled with Hydra overrides:
-
-```bash
-SAMPLING_MODE=anchor_immediate_feedback \
-bash recipe/serl/run_webshop.sh \
-  actor_rollout_ref.actor.serl.anchor_enable_similarity=True \
-  actor_rollout_ref.actor.serl.anchor_similarity_thresh=0.95
-```
-
-## LLM-Judged Feedback
-
-SERL supports judged feedback, where an OpenAI-compatible judge model summarizes a trajectory into concise guidance before teacher scoring.
-
-Supported modes:
-
-| `SAMPLING_MODE` | Meaning |
-| --- | --- |
-| `judge_current_traj` | Judge the current trajectory. |
-| `judge_current_traj_on_successful_sample` | Judge the current trajectory with a successful trajectory as reference. |
-
-Example:
-
-```bash
-JUDGE_API_URL=http://localhost:8000/v1 \
-JUDGE_MODEL=your-judge-model \
-JUDGE_API_KEY=your-api-key \
-SAMPLING_MODE=judge_current_traj \
-bash recipe/serl/run_alfworld.sh
-```
-
-## Trajectory Format
-
-SERL supports two trajectory organization formats:
-
-| Format | Description |
-| --- | --- |
-| `response` | Response-oriented trajectory rendering. This is the default. |
-| `observation_action` | Observation-action turn rendering. |
-
-Choose the format with `TRAJECTORY_FORMAT=<format>`:
-
-```bash
-TRAJECTORY_FORMAT=response bash recipe/serl/run_alfworld.sh
-TRAJECTORY_FORMAT=observation_action bash recipe/serl/run_webshop.sh
+docs/serl/                           SERL logo and paper figures
 ```
 
 ## Installation
@@ -179,7 +83,7 @@ pip3 install flash-attn==2.7.4.post1 --no-build-isolation --no-cache-dir
 pip install -e .
 ```
 
-Environment packages may have conflicting Python and dependency requirements. Use a separate conda environment for each environment backend when needed.
+Environment packages may have conflicting Python and dependency requirements. Use a separate conda environment for each backend when needed.
 
 ### ALFWorld
 
@@ -203,7 +107,7 @@ Use `--extra` if you also want pretrained checkpoints and seq2seq data:
 alfworld-download -f --extra
 ```
 
-Verify the text game installation:
+Verify the text-game installation:
 
 ```bash
 alfworld-play-tw
@@ -241,9 +145,7 @@ Warnings about `spacy` or `weasel` requiring an older `typer` can be ignored for
 
 ## Quickstart
 
-### Prepare Text Data
-
-The parquet files provide the text modality marker and dataset size. The actual task, observation, admissible actions, reward, and feedback are produced by the environment during rollout.
+Prepare the text-mode parquet files. The parquet files provide the text modality marker and dataset size. Task observations, valid actions, rewards, and feedback are produced online by the environment during rollout.
 
 ```bash
 mkdir -p ~/data/serl/text
@@ -261,14 +163,23 @@ This creates:
 ~/data/serl/text/test.parquet
 ```
 
-### Run ALFWorld
+Run ALFWorld:
 
 ```bash
 conda activate serl
 bash recipe/serl/run_alfworld.sh
 ```
 
-Common overrides:
+Run WebShop:
+
+```bash
+conda activate serl-webshop
+bash recipe/serl/run_webshop.sh
+```
+
+The launch scripts default to `Qwen/Qwen2.5-7B-Instruct`, `SAMPLING_MODE=immediate_feedback`, and `TRAJECTORY_FORMAT=response`.
+
+Common ALFWorld override:
 
 ```bash
 MODEL_PATH=Qwen/Qwen2.5-7B-Instruct \
@@ -280,14 +191,7 @@ TRAJECTORY_FORMAT=response \
 bash recipe/serl/run_alfworld.sh
 ```
 
-### Run WebShop
-
-```bash
-conda activate serl-webshop
-bash recipe/serl/run_webshop.sh
-```
-
-Common overrides:
+Common WebShop override:
 
 ```bash
 MODEL_PATH=Qwen/Qwen2.5-7B-Instruct \
@@ -315,9 +219,100 @@ bash recipe/serl/run_webshop.sh \
   actor_rollout_ref.actor.optim.lr=1e-6
 ```
 
-## Default Training Settings
+## Supported Feedback Modes
 
-The launch scripts use these defaults:
+Set the feedback source with `SAMPLING_MODE=<mode>`. Implementation names use `successful_sample` for a successful trajectory reference.
+
+| `SAMPLING_MODE` | Feedback source |
+| --- | --- |
+| `immediate_feedback` | immediate per-step feedback |
+| `next_observation` | next observation |
+| `future_trajectory` | future trajectory |
+| `successful_sample_or_immediate_feedback` | successful trajectory or immediate feedback |
+| `successful_sample_immediate_feedback` | successful trajectory and immediate feedback |
+| `successful_sample_next_observation` | successful trajectory and next observation |
+| `successful_sample_future_trajectory` | successful trajectory and future trajectory |
+| `successful_sample_future_trajectory_immediate_feedback` | successful trajectory, future trajectory, and immediate feedback |
+| `successful_sample_future_trajectory_next_observation` | successful trajectory, future trajectory, and next observation |
+
+Examples:
+
+```bash
+SAMPLING_MODE=immediate_feedback bash recipe/serl/run_alfworld.sh
+SAMPLING_MODE=successful_sample_immediate_feedback bash recipe/serl/run_webshop.sh
+SAMPLING_MODE=successful_sample_future_trajectory_next_observation bash recipe/serl/run_webshop.sh
+```
+
+## Anchor-Level Feedback
+
+Anchor placement is enabled with the `anchor_` prefix. To disable anchor placement, use the corresponding non-anchor mode.
+
+Supported anchor modes:
+
+```text
+anchor_immediate_feedback
+anchor_next_observation
+anchor_future_trajectory
+anchor_successful_sample_or_immediate_feedback
+anchor_successful_sample_immediate_feedback
+anchor_successful_sample_next_observation
+anchor_successful_sample_future_trajectory
+anchor_successful_sample_future_trajectory_immediate_feedback
+anchor_successful_sample_future_trajectory_next_observation
+```
+
+Examples:
+
+```bash
+SAMPLING_MODE=anchor_immediate_feedback bash recipe/serl/run_alfworld.sh
+SAMPLING_MODE=anchor_successful_sample_immediate_feedback bash recipe/serl/run_webshop.sh
+```
+
+Optional similarity filtering can be enabled with Hydra overrides:
+
+```bash
+SAMPLING_MODE=anchor_immediate_feedback \
+bash recipe/serl/run_webshop.sh \
+  actor_rollout_ref.actor.serl.anchor_enable_similarity=True \
+  actor_rollout_ref.actor.serl.anchor_similarity_thresh=0.95
+```
+
+## LLM-Judged Feedback
+
+SERL also supports judged feedback, where an OpenAI-compatible judge model summarizes a trajectory into concise guidance before teacher scoring.
+
+| `SAMPLING_MODE` | Meaning |
+| --- | --- |
+| `judge_current_traj` | Judge the current trajectory. |
+| `judge_current_traj_on_successful_sample` | Judge the current trajectory with a successful trajectory as reference. |
+
+Example:
+
+```bash
+JUDGE_API_URL=http://localhost:8000/v1 \
+JUDGE_MODEL=your-judge-model \
+JUDGE_API_KEY=your-api-key \
+SAMPLING_MODE=judge_current_traj \
+bash recipe/serl/run_alfworld.sh
+```
+
+## Trajectory Format
+
+SERL supports two trajectory organization formats:
+
+| Format | Description |
+| --- | --- |
+| `response` | Response-oriented trajectory rendering. This is the default. |
+| `observation_action` | Observation-action turn rendering. |
+
+Choose the format with `TRAJECTORY_FORMAT=<format>`:
+
+```bash
+TRAJECTORY_FORMAT=response bash recipe/serl/run_alfworld.sh
+TRAJECTORY_FORMAT=observation_action bash recipe/serl/run_webshop.sh
+```
+
+## Default Training Settings
 
 | Setting | ALFWorld | WebShop |
 | --- | ---: | ---: |
@@ -346,6 +341,11 @@ The scripts expose common settings through environment variables:
 | `TENSOR_MODEL_PARALLEL_SIZE` | `2` |
 | `GROUP_SIZE` | `8` |
 
+## Citation
+
+BibTeX will be added when the paper metadata is public.
+
 ## Acknowledgement
 
 SERL is implemented on top of [veRL](https://github.com/volcengine/verl). The environment integrations build on [ALFWorld](https://github.com/alfworld/alfworld) and [WebShop](https://github.com/princeton-nlp/WebShop). We thank the authors and contributors of these projects.
+
