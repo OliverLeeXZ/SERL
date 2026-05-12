@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./docs/serl/serl-logo.png" alt="SERL logo" width="60%">
+    <img src="./docs/serl/serl-logo.png" alt="SERL logo" width="75%">
 </p>
 
 # SERL
