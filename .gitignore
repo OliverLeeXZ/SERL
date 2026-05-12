@@ -109,9 +109,6 @@ ENV/
 # GitHub automation copied from upstream is not part of the SERL release package.
 .github/
 
-# Local paper draft
-/SERL4nips.pdf
-
 # Mac
 .DS_Store
 

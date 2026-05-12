@@ -1,89 +1,89 @@
 <p align="center">
-    <img src="./docs/gigpo/logo-SERL.png" alt="SERL logo" width="50%">
+    <img src="./docs/serl/serl-logo.png" alt="SERL logo" width="60%">
 </p>
 
 # SERL
 
-## What and When to Distill: Selective Hindsight Distillation for Multi-Turn Agents
+SERL is a reinforcement-learning recipe for long-horizon LLM agents. It uses environment feedback as a training-time credit-assignment signal while keeping policy optimization anchored to task rewards.
 
-SERL is the official codebase for **Selective Environment-Reweighted Learning**, a framework for using hindsight feedback in long-horizon LLM agent reinforcement learning.
+This repository focuses on two text-agent environments:
 
-Paper: [SERL4nips.pdf](./SERL4nips.pdf)  
-Status: submitted to NeurIPS 2026
+- ALFWorld
+- WebShop
 
-Long-horizon agent training has a credit-assignment problem: a sparse episode reward tells us whether the whole rollout succeeds, but not which action in a multi-turn trajectory caused success or failure. Agent environments already return useful feedback after each action, such as an error message, a changed page, a new observation, or a successful reference trajectory. SERL studies how to use these signals without turning privileged hindsight into unstable imitation.
+The main entrypoints are:
 
-The central principle is:
+- `recipe/serl/run_alfworld.sh`
+- `recipe/serl/run_webshop.sh`
 
-> The task reward determines the update direction; hindsight feedback only adjusts where and how strongly that update is applied.
+## Contents
 
-SERL implements this by using an environment-conditioned teacher to reweight the GRPO objective on executable action tokens. The teacher sees training-only hindsight, the student does not. The resulting teacher-student likelihood gap is clipped, sign-aware, decayed during training, and masked to action spans so that feedback improves credit assignment without controlling the full policy update.
+- [Features](#features)
+- [Repository Layout](#repository-layout)
+- [Method Overview](#method-overview)
+- [Feedback Modes](#feedback-modes)
+- [Anchor Modes](#anchor-modes)
+- [LLM-Judged Feedback](#llm-judged-feedback)
+- [Trajectory Format](#trajectory-format)
+- [Installation](#installation)
+- [Quickstart](#quickstart)
+- [Default Training Settings](#default-training-settings)
+- [Acknowledgement](#acknowledgement)
 
-## Highlights
+## Features
 
-- Systematic study of feedback source and feedback placement for multi-turn LLM agents.
-- SERL objective built on GRPO with bounded, action-token-level hindsight reweighting.
-- Step-level and anchor-level feedback placement.
-- Support for immediate feedback, next observation, future trajectory, successful trajectory combinations, and LLM-judged trajectory feedback.
-- Reproduction scripts for ALFWorld and WebShop with Qwen2.5-7B-Instruct.
+- Step-wise multi-turn agent-environment interaction.
+- SERL action-mask policy loss: `actor_rollout_ref.actor.policy_loss.loss_mode=serl_action_mask`.
+- Configurable training-time feedback from immediate feedback, next observation, future trajectory, successful trajectory, and mixed variants.
+- Anchor variants that place feedback around semantically meaningful state groups.
+- LLM-judged feedback modes for compact trajectory diagnostics.
+- Two trajectory organization formats: `response` and `observation_action`.
+- Dedicated scripts for ALFWorld and WebShop.
 
 ## Repository Layout
 
 ```text
 recipe/serl/                         SERL training recipe, config, and launch scripts
-recipe/serl/run_alfworld.sh          ALFWorld reproduction script
-recipe/serl/run_webshop.sh           WebShop reproduction script
+recipe/serl/run_alfworld.sh          ALFWorld launch script
+recipe/serl/run_webshop.sh           WebShop launch script
 agent_system/environments/           Multi-turn agent environment wrappers
 judge_utils/                         Utilities for LLM-judged feedback
 examples/data_preprocess/prepare.py  Text-mode parquet preparation
-SERL4nips.pdf                        NeurIPS 2026 submission draft
+docs/serl/                           SERL logo assets
 ```
-
-## Main Results
-
-The paper trains Qwen2.5-7B-Instruct on ALFWorld and WebShop. All RL methods use group size 8 and the same main training budget.
-
-| Method | ALFWorld Avg. Success | WebShop Score | WebShop Success |
-| --- | ---: | ---: | ---: |
-| GRPO | 75.3 | 73.1 | 64.1 |
-| GIGPO | 83.9 | 83.5 | 75.8 |
-| HGPO | 85.8 | 88.4 | 77.8 |
-| RLSD | 82.9 | 83.6 | 75.8 |
-| **SERL** | **90.0** | **89.5** | **80.1** |
-
-Relative to GRPO, SERL improves ALFWorld average success by 14.7 points and WebShop success by 16.0 points. Relative to the strongest pure RL baseline, HGPO, SERL improves ALFWorld by 4.2 points and WebShop success by 2.3 points.
 
 ## Method Overview
 
-SERL separates two questions:
+SERL separates three implementation choices:
 
-1. **What should the teacher see?**  
-   The teacher can condition on immediate feedback, next observations, future trajectories, successful trajectories, current trajectories, or combinations of these signals.
+1. **Feedback source**  
+   The feedback context can come from immediate feedback, next observations, future trajectories, successful trajectories, current trajectories, or combinations of these signals.
 
-2. **When should that feedback affect learning?**  
-   Feedback can be applied at every transition (`step-level`) or concentrated around semantically meaningful state groups (`anchor-level`).
+2. **Feedback placement**  
+   Feedback can be applied at every transition or concentrated around anchor states.
 
-For an action token, SERL compares the student probability with a stop-gradient teacher probability conditioned on placed hindsight. The teacher-student log-probability gap becomes a bounded coefficient on the GRPO advantage. Action tokens receive the reweighted advantage; reasoning and formatting tokens keep the original reward-driven GRPO update.
+3. **Feedback strength**  
+   Feedback-conditioned teacher scores are converted into bounded, action-token-level weights. Reasoning and formatting tokens keep the original reward-driven update.
 
-The teacher weight decays during training. Early training uses hindsight to improve credit assignment when exploration is weak; later training returns control to the task reward to reduce privileged-information bias.
+The task reward still determines whether sampled behavior should be reinforced or suppressed. Feedback adjusts the locality and magnitude of that update.
 
 ## Feedback Modes
 
 Set the feedback source with `SAMPLING_MODE=<mode>`. The scripts default to `immediate_feedback`.
 
-Implementation names use `successful_sample` for the paper's successful trajectory.
+Implementation names use `successful_sample` for a successful trajectory reference.
 
-| `SAMPLING_MODE` | Paper feedback source | ALFWorld Avg. | WebShop Score | WebShop Success |
-| --- | --- | ---: | ---: | ---: |
-| `immediate_feedback` | immediate feedback | 90.0 | 89.5 | 80.1 |
-| `next_observation` | next observation | 76.6 | 90.5 | 77.7 |
-| `future_trajectory` | future trajectory | 83.1 | 85.9 | 76.6 |
-| `successful_sample_or_immediate_feedback` | successful trajectory or immediate feedback | 81.9 | 84.1 | 72.7 |
-| `successful_sample_immediate_feedback` | successful trajectory and immediate feedback | **90.4** | 87.7 | **81.3** |
-| `successful_sample_next_observation` | successful trajectory and next observation | 85.6 | 86.9 | 77.7 |
-| `successful_sample_future_trajectory` | successful trajectory and future trajectory | 83.3 | 88.1 | 76.6 |
-| `successful_sample_future_trajectory_immediate_feedback` | successful trajectory, future trajectory, and immediate feedback | 76.1 | 87.1 | 77.0 |
-| `successful_sample_future_trajectory_next_observation` | successful trajectory, future trajectory, and next observation | 76.6 | 84.1 | 76.2 |
+| `SAMPLING_MODE` | Feedback source |
+| --- | --- |
+| `immediate_feedback` | immediate feedback |
+| `next_observation` | next observation |
+| `future_trajectory` | future trajectory |
+| `successful_sample_or_immediate_feedback` | successful trajectory or immediate feedback |
+| `successful_sample_immediate_feedback` | successful trajectory and immediate feedback |
+| `successful_sample_next_observation` | successful trajectory and next observation |
+| `successful_sample_future_trajectory` | successful trajectory and future trajectory |
+| `successful_sample_future_trajectory_immediate_feedback` | successful trajectory, future trajectory, and immediate feedback |
+| `successful_sample_future_trajectory_next_observation` | successful trajectory, future trajectory, and next observation |
 
 Examples:
 
@@ -95,7 +95,7 @@ SAMPLING_MODE=successful_sample_future_trajectory_next_observation bash recipe/s
 
 ## Anchor Modes
 
-Anchor-level placement groups semantically similar states and applies hindsight around meaningful state changes. In the code, anchor is enabled by using the `anchor_` prefix. To disable anchor, use the corresponding non-anchor mode.
+Anchor placement is enabled by using the `anchor_` prefix. To disable anchor placement, use the corresponding non-anchor mode.
 
 Supported anchor modes:
 
@@ -127,23 +127,9 @@ bash recipe/serl/run_webshop.sh \
   actor_rollout_ref.actor.serl.anchor_similarity_thresh=0.95
 ```
 
-In the WebShop ablation, anchor placement is most useful when it suppresses redundant or weakly causal dense feedback:
-
-| Feedback source | Step Success | Anchor Success |
-| --- | ---: | ---: |
-| immediate feedback | 80.1 | 79.3 |
-| next observation | 77.7 | 76.2 |
-| future trajectory | 76.6 | 75.4 |
-| successful trajectory or immediate feedback | 72.7 | 74.8 |
-| successful trajectory and immediate feedback | 81.3 | **81.9** |
-| successful trajectory and next observation | 77.7 | 79.7 |
-| successful trajectory and future trajectory | 76.6 | 77.7 |
-| successful trajectory, future trajectory, and immediate feedback | 77.0 | 79.3 |
-| successful trajectory, future trajectory, and next observation | 72.9 | 76.3 |
-
 ## LLM-Judged Feedback
 
-SERL also supports judged feedback, where an external OpenAI-compatible judge summarizes a trajectory into concise privileged guidance before teacher scoring.
+SERL supports judged feedback, where an OpenAI-compatible judge model summarizes a trajectory into concise guidance before teacher scoring.
 
 Supported modes:
 
@@ -161,15 +147,6 @@ JUDGE_API_KEY=your-api-key \
 SAMPLING_MODE=judge_current_traj \
 bash recipe/serl/run_alfworld.sh
 ```
-
-With Kimi-K2.6 as judge, the paper reports:
-
-| Judge feedback | ALFWorld Avg. | WebShop Score | WebShop Success |
-| --- | ---: | ---: | ---: |
-| Current Trajectory | 86.7 | 88.2 | 78.1 |
-| Current Trajectory + Successful Trajectory | 89.4 | 89.0 | 81.8 |
-
-The paper also reports that judge capacity matters: Qwen2.5-7B-Instruct gives useful signal on ALFWorld but is weaker on WebShop, likely because WebShop trajectories contain long HTML-like observations and require a longer context window.
 
 ## Trajectory Format
 
@@ -284,7 +261,7 @@ This creates:
 ~/data/serl/text/test.parquet
 ```
 
-### Reproduce ALFWorld
+### Run ALFWorld
 
 ```bash
 conda activate serl
@@ -303,7 +280,7 @@ TRAJECTORY_FORMAT=response \
 bash recipe/serl/run_alfworld.sh
 ```
 
-### Reproduce WebShop
+### Run WebShop
 
 ```bash
 conda activate serl-webshop
@@ -340,7 +317,7 @@ bash recipe/serl/run_webshop.sh \
 
 ## Default Training Settings
 
-The reproduction scripts follow the paper's main setup:
+The launch scripts use these defaults:
 
 | Setting | ALFWorld | WebShop |
 | --- | ---: | ---: |
@@ -368,18 +345,6 @@ The scripts expose common settings through environment variables:
 | `N_GPUS_PER_NODE` | `8` |
 | `TENSOR_MODEL_PARALLEL_SIZE` | `2` |
 | `GROUP_SIZE` | `8` |
-
-## Citation
-
-The paper is currently an anonymous NeurIPS 2026 submission. Citation information will be updated after de-anonymization.
-
-```bibtex
-@misc{serl2026selective,
-  title        = {What and When to Distill: Selective Hindsight Distillation for Multi-Turn Agents},
-  year         = {2026},
-  note         = {Submitted to NeurIPS 2026}
-}
-```
 
 ## Acknowledgement
 
