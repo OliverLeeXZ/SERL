@@ -15,7 +15,7 @@
 # limitations under the License.
 """
 HGPO Recipe: FSDP PPO Trainer with Ray-based single controller.
-Self-contained for upstream verl-agent submission. Ensures adjust_batch() is called
+Self-contained for upstream SERL submission. Ensures adjust_batch() is called
 *after* compute_advantage() so group-based adv (HGPO/GRPO/RLOO) runs on original batch order.
 """
 

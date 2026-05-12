@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./docs/gigpo/logo-verl-agent.png" alt="logo" width="55%">
+    <img src="./docs/gigpo/logo-SERL.png" alt="logo" width="55%">
 </p>
 
 
@@ -14,42 +14,42 @@
   <a href="https://arxiv.org/abs/2505.10978">
     <img src="https://img.shields.io/badge/arXiv-Paper-red?style=flat-square&logo=arxiv" alt="arXiv Paper"></a>
   &nbsp;
-  <a href="https://github.com/langfengQ/verl-agent">
+  <a href="https://github.com/langfengQ/SERL">
     <img src="https://img.shields.io/badge/GitHub-Project-181717?style=flat-square&logo=github" alt="GitHub Project"></a>
   &nbsp;
-  <a href="https://huggingface.co/collections/langfeng01/verl-agent-684970e8f51babe2a6d98554">
+  <a href="https://huggingface.co/collections/langfeng01/SERL-684970e8f51babe2a6d98554">
     <img src="https://img.shields.io/badge/HuggingFace-Models-yellow?style=flat-square&logo=huggingface" alt="HuggingFace Models"></a>
   &nbsp;
   <a href="https://x.com/langfengq/status/1930848580505620677">
     <img src="https://img.shields.io/badge/Twitter-Channel-000000?style=flat-square&logo=x" alt="X Channel"></a>
   &nbsp;
-  <a href="https://github.com/langfengQ/verl-agent/blob/master/LICENSE">
+  <a href="https://github.com/langfengQ/SERL/blob/master/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat-square" alt="License"></a>
   &nbsp;
-  <a href="https://github.com/langfengQ/verl-agent/issues">
-    <img src="https://img.shields.io/github/issues/langfengQ/verl-agent?style=flat-square&color=green" alt="GitHub issues"></a>
+  <a href="https://github.com/langfengQ/SERL/issues">
+    <img src="https://img.shields.io/github/issues/langfengQ/SERL?style=flat-square&color=green" alt="GitHub issues"></a>
   &nbsp;
-  <a href="https://github.com/langfengQ/verl-agent/stargazers">
-    <img src="https://img.shields.io/github/stars/langfengQ/verl-agent?style=social" alt="Repo stars"></a>
+  <a href="https://github.com/langfengQ/SERL/stargazers">
+    <img src="https://img.shields.io/github/stars/langfengQ/SERL?style=social" alt="Repo stars"></a>
   &nbsp;
 </p>
 
-`verl-agent` is an extension of [veRL](https://github.com/volcengine/verl), specifically designed for training **large language model (LLM) agents via reinforcement learning (RL)**. 
+`SERL` is an extension of [veRL](https://github.com/volcengine/verl), specifically designed for training **large language model (LLM) agents via reinforcement learning (RL)**. 
 
-Unlike prior approaches that simply concatenate full interaction histories, `verl-agent` proposes **step-independent multi-turn rollout mechanism**, which allows for **fully customizable** per-step input structures, history management, and memory modules. This design makes `verl-agent` **highly scalable for very long-horizon, multi-turn RL training** (e.g., tasks in ALFWorld can require up to 50 steps to complete).
+Unlike prior approaches that simply concatenate full interaction histories, `SERL` proposes **step-independent multi-turn rollout mechanism**, which allows for **fully customizable** per-step input structures, history management, and memory modules. This design makes `SERL` **highly scalable for very long-horizon, multi-turn RL training** (e.g., tasks in ALFWorld can require up to 50 steps to complete).
 
-`verl-agent` provides a **diverse set of RL algorithms** (including our new algorithm GiGPO) and a **rich suite of agent environments**, enabling the development of reasoning agents in both visual and text-based tasks.
+`SERL` provides a **diverse set of RL algorithms** (including our new algorithm GiGPO) and a **rich suite of agent environments**, enabling the development of reasoning agents in both visual and text-based tasks.
 
 # News
-- [2026.02] `HGPO` accepted at [ICLR 2026](https://iclr.cc/)! 🎉🎉🎉 [[Paper](https://openreview.net/forum?id=T8Dev99qnz)] [[Code](https://github.com/langfengQ/verl-agent/tree/master/recipe/hgpo)]
+- [2026.02] `HGPO` accepted at [ICLR 2026](https://iclr.cc/)! 🎉🎉🎉 [[Paper](https://openreview.net/forum?id=T8Dev99qnz)] [[Code](https://github.com/langfengQ/SERL/tree/master/recipe/hgpo)]
 - [2026.02] 🔥 We open-source [Dr. MAS](https://github.com/langfengQ/DrMAS), which supports stable end-to-end RL post-training of **multi-agent LLM systems**! [[Paper](https://arxiv.org/pdf/2602.08847)] [[Code](https://github.com/langfengQ/DrMAS)]
 - [2025.12] `Qwen3-VL` is supported! See example [here](./examples/gigpo_trainer/run_sokoban_qwen3vl.sh).
 - [2025.09] `GiGPO` is now supported by [ROLL](https://github.com/alibaba/ROLL)! [[Document](https://alibaba.github.io/ROLL/docs/English/UserGuide/agentic/agentic_GiGPO)] [[Train Curves](https://github.com/alibaba/ROLL/issues/173#issuecomment-3332106534)].
-- [2025.09] `verl-agent`-style training pipeline is now supported by [OpenManus-RL](https://github.com/OpenManus/OpenManus-RL)!
+- [2025.09] `SERL`-style training pipeline is now supported by [OpenManus-RL](https://github.com/OpenManus/OpenManus-RL)!
 - [2025.09] [GiGPO](https://arxiv.org/abs/2505.10978) accepted at [NeurIPS 2025](https://neurips.cc/)! 🎉🎉🎉
-- [2025.07] `GiGPO` & `verl-agent` talks at [Agent for SWE meetup](https://lu.ma/e498qhsi) by LF AI & Data Singapore on 7/11.
+- [2025.07] `GiGPO` & `SERL` talks at [Agent for SWE meetup](https://lu.ma/e498qhsi) by LF AI & Data Singapore on 7/11.
 - [2025.07] Add modular memory manager. See [here](./agent_system/memory).
-- [2025.06] ***Major update***: Merge all features from the latest [veRL](https://github.com/volcengine/verl). For example, `verl-agent` now supports Qwen3, LoRA, REINFORCE++, and more. Feel free to explore!
+- [2025.06] ***Major update***: Merge all features from the latest [veRL](https://github.com/volcengine/verl). For example, `SERL` now supports Qwen3, LoRA, REINFORCE++, and more. Feel free to explore!
 - [2025.05] Code released and paper on `GiGPO` released.
 
 # Quick Feature Summary
@@ -101,7 +101,7 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
   - [4. Add New Environments](#4-add-new-environments)
 - [Contributing](#contributing)
 - [Acknowledgement](#acknowledgement)
-- [Awesome Work Powered by verl-agent & GiGPO](#awesome-work-powered-by-verl-agent--gigpo)
+- [Awesome Work Powered by SERL & GiGPO](#awesome-work-powered-by-serl--gigpo)
 - [Citation](#citation)
 - [Star History](#star-history)
 
@@ -109,39 +109,39 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
 
 - **Multi-Turn Agent-Environment Interaction**
 
-  `verl-agent` supports multi-step interactive loops between agents and environments. Agents perceive environmental feedback after each step, forming the basis for reinforcement learning.
+  `SERL` supports multi-step interactive loops between agents and environments. Agents perceive environmental feedback after each step, forming the basis for reinforcement learning.
 
 - **Fully Customizable Memory Module & Per-Step Input Structure**
 
-  `verl-agent` features a **customizable memory module** (see [here](./agent_system/memory)) that allows for flexibly choosing what history to include for each step. The input typically consists of the current observation along with a concise history summary at each step (see prompt [here](./agent_system/environments/prompts/webshop.py)). Developers can **freely define what to include, such as recent steps, key events, summaries, or external knowledge**. There's no requirement to concatenate the full history, and the input structure for each step is ***fully customizable***.
+  `SERL` features a **customizable memory module** (see [here](./agent_system/memory)) that allows for flexibly choosing what history to include for each step. The input typically consists of the current observation along with a concise history summary at each step (see prompt [here](./agent_system/environments/prompts/webshop.py)). Developers can **freely define what to include, such as recent steps, key events, summaries, or external knowledge**. There's no requirement to concatenate the full history, and the input structure for each step is ***fully customizable***.
 
 - **Scalable for Very Long-Horizon Optimization**
 
-  Prior works like [RAGEN](https://github.com/RAGEN-AI/RAGEN) concatenate the entire history of states and responses. This causes the context length to grow rapidly with the number of turns, making them difficult to scale to long-horizon scenarios. In contrast, `verl-agent` constructs inputs step-by-step. Each input is concise and customizable. This design keeps the context length almost constant over time, making `verl-agent` highly scalable for long-horizon scenarios (e.g., 30–50 steps in ALFWorld) without running into token limits or inefficiency.
+  Prior works like [RAGEN](https://github.com/RAGEN-AI/RAGEN) concatenate the entire history of states and responses. This causes the context length to grow rapidly with the number of turns, making them difficult to scale to long-horizon scenarios. In contrast, `SERL` constructs inputs step-by-step. Each input is concise and customizable. This design keeps the context length almost constant over time, making `SERL` highly scalable for long-horizon scenarios (e.g., 30–50 steps in ALFWorld) without running into token limits or inefficiency.
   
 - **Parallelized Gym-Style Environments and Group Environments**
 
-  `verl-agent` provides a gym-style interface with support for parallelized environments. This enables high-throughput rollouts, speeding up training. In addition, `verl-agent` introduces the concept of group environments. All environments within a group share identical initial states during `reset()`. This is especially useful for algorithms like GRPO and DAPO that require multiple rollouts on the same state. You can configure the number of rollouts per group using the `env.rollout.n` in [ppo_trainer.yaml](./verl/trainer/config/ppo_trainer.yaml) config file.
+  `SERL` provides a gym-style interface with support for parallelized environments. This enables high-throughput rollouts, speeding up training. In addition, `SERL` introduces the concept of group environments. All environments within a group share identical initial states during `reset()`. This is especially useful for algorithms like GRPO and DAPO that require multiple rollouts on the same state. You can configure the number of rollouts per group using the `env.rollout.n` in [ppo_trainer.yaml](./verl/trainer/config/ppo_trainer.yaml) config file.
 
 - **Support for Various Models**
 
-  `verl-agent` supports a wide range of LLMs, including `Qwen3`, `Qwen3-VL`, `Qwen2.5`, `LLaMA3.2`, `Qwen2.5-VL`, and others, allowing flexibility for various deployment needs.
+  `SERL` supports a wide range of LLMs, including `Qwen3`, `Qwen3-VL`, `Qwen2.5`, `LLaMA3.2`, `Qwen2.5-VL`, and others, allowing flexibility for various deployment needs.
 
 - **LoRA Fine-Tuning Support**
 
-  `verl-agent` provides support for [LoRA](https://arxiv.org/abs/2106.09685) (Low-Rank Adaptation), significantly reducing computational cost. Now, `verl-agent` supports training 7B models using 2 H100 GPUs.
+  `SERL` provides support for [LoRA](https://arxiv.org/abs/2106.09685) (Low-Rank Adaptation), significantly reducing computational cost. Now, `SERL` supports training 7B models using 2 H100 GPUs.
 
 - **Vision-Language Agent Support**
 
-  Beyond text-based agents, `verl-agent` also supports training vision-language agents. This enables multi-modal reasoning in environments where both visual perception and language understanding are required.
+  Beyond text-based agents, `SERL` also supports training vision-language agents. This enables multi-modal reasoning in environments where both visual perception and language understanding are required.
 
 - **Rich Suite of Environments**
   
-  `verl-agent` offers a diverse set of interactive environments including embodied AI environments like [ALFWorld](https://github.com/alfworld/alfworld), visual games such as [Sokoban](https://github.com/mpSchrader/gym-sokoban) and [Gym Cards](https://github.com/RL4VLM/RL4VLM/blob/main/gym-cards/README.md), and digital interface control tasks like [WebShop](https://github.com/princeton-nlp/WebShop) and [AppWorld](https://github.com/stonybrooknlp/appworld/) (experimental). 
+  `SERL` offers a diverse set of interactive environments including embodied AI environments like [ALFWorld](https://github.com/alfworld/alfworld), visual games such as [Sokoban](https://github.com/mpSchrader/gym-sokoban) and [Gym Cards](https://github.com/RL4VLM/RL4VLM/blob/main/gym-cards/README.md), and digital interface control tasks like [WebShop](https://github.com/princeton-nlp/WebShop) and [AppWorld](https://github.com/stonybrooknlp/appworld/) (experimental). 
 
 - **Diverse RL Algorithms**
 
-  `verl-agent` includes implementations of various RL algorithms, such as [GRPO](https://arxiv.org/abs/2402.03300), [PPO](https://arxiv.org/abs/1707.06347), [DAPO](https://arxiv.org/abs/2503.14476), [GSPO](https://arxiv.org/abs/2507.18071), [RLOO](https://arxiv.org/abs/2402.14740) and our new state-of-the-art algorithm [GiGPO](https://arxiv.org/abs/2505.10978). It also supports several variants enhanced with dynamic sampling and clip-higher techniques.
+  `SERL` includes implementations of various RL algorithms, such as [GRPO](https://arxiv.org/abs/2402.03300), [PPO](https://arxiv.org/abs/1707.06347), [DAPO](https://arxiv.org/abs/2503.14476), [GSPO](https://arxiv.org/abs/2507.18071), [RLOO](https://arxiv.org/abs/2402.14740) and our new state-of-the-art algorithm [GiGPO](https://arxiv.org/abs/2505.10978). It also supports several variants enhanced with dynamic sampling and clip-higher techniques.
 
 # Results
 > ⚠️ Note: The performance of GiGPO has improved slightly after the "[2025.06.03] Major Update." To reproduce the original paper results, please use the version released prior to the "[2025.06.03] Major Update."
@@ -199,13 +199,13 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
 </table>
 
 
-We have released our models on [HuggingFace](https://huggingface.co/collections/langfeng01/verl-agent-684970e8f51babe2a6d98554).
+We have released our models on [HuggingFace](https://huggingface.co/collections/langfeng01/SERL-684970e8f51babe2a6d98554).
 
 # Installation
 ## Install veRL
 ```bash
-conda create -n verl-agent python==3.12 -y
-conda activate verl-agent
+conda create -n serl python==3.12 -y
+conda activate serl
 
 pip3 install vllm==0.11.0
 
@@ -239,10 +239,10 @@ alfworld-play-tw
 ---
 
 ### 2. WebShop
-WebShop requires Python <=3.10, so begin by creating a new `verl-agent-webshop` environment
+WebShop requires Python <=3.10, so begin by creating a new `serl-webshop` environment
 ```bash
-conda create -n verl-agent-webshop python==3.10 -y
-conda activate verl-agent-webshop
+conda create -n serl-webshop python==3.10 -y
+conda activate serl-webshop
 ```
 
 Install WebShop
@@ -254,7 +254,7 @@ cd ./agent_system/environments/env_package/webshop/webshop
 Note: If you encounter issues with gdown, you may need to visit `https://drive.google.com/`, get your Google Drive cookie, and paste it into `.cache/gdown/cookies.txt`.
 Or you may need to manually download the files.
 
-After WebShop is installed, return to the root directory of the repository and install the verl package in `verl-agent`:
+After WebShop is installed, return to the root directory of the repository and install the verl package in `SERL`:
 ```bash
 cd repo_root/
 pip3 install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
@@ -292,7 +292,7 @@ pip install git+https://github.com/StonyBrookNLP/appworld.git
 appworld install
 pip install -e .
 ```
-You can ignore the warning of incompatibility for appworld, because we don't run appworld in `verl-agent` environment.
+You can ignore the warning of incompatibility for appworld, because we don't run appworld in `SERL` environment.
 
 Create a dedicated conda environment `appworld` for the AppWorld server:
 ```bash
@@ -386,7 +386,7 @@ bash examples/prompt_agent/run_gpt4o_agent.sh
 # FAQ
 
 ## 1. Customize Memory Module
-`verl-agent` supports a customizable and flexible memory system for managing and formatting interaction history between the agent and the environment. We provide a [SimpleMemory](./agent_system/memory/memory.py) implementation as a default starting point. This memory module is invoked within [env_manager.py](./agent_system/environments/env_manager.py) (i.e., `build_text_obs()`) to construct the observation at each step. 
+`SERL` supports a customizable and flexible memory system for managing and formatting interaction history between the agent and the environment. We provide a [SimpleMemory](./agent_system/memory/memory.py) implementation as a default starting point. This memory module is invoked within [env_manager.py](./agent_system/environments/env_manager.py) (i.e., `build_text_obs()`) to construct the observation at each step. 
 
 Developers are encouraged to extend this module with custom memory strategies, such as dynamic summarization, selective memory retention, or external knowledge integration, to improve the handling of long-horizon interaction histories.
 
@@ -419,7 +419,7 @@ For a reference implementation, see the webshop environment:
 
 # Contributing
 
-We welcome and appreciate all contributions! If you have ideas to improve `verl-agent`, please feel free to submit a pull request (PR).
+We welcome and appreciate all contributions! If you have ideas to improve `SERL`, please feel free to submit a pull request (PR).
 
 Example contributions include:
 - **AppWorld Bug Fixes**: Fixed compatibility issues and ensured stable integration with the experimental AppWorld environment.
@@ -428,12 +428,12 @@ Example contributions include:
 
 # Acknowledgement
 
-`verl-agent` codebase is built upon [veRL](https://github.com/volcengine/verl). 
+`SERL` codebase is built upon [veRL](https://github.com/volcengine/verl). 
 The supported environments are adapted from [ALFWorld](https://github.com/alfworld/alfworld), [Sokoban](https://github.com/mpSchrader/gym-sokoban), [SkyRL-Gym](https://github.com/NovaSky-AI/SkyRL/tree/main/skyrl-gym), [Gym Cards](https://github.com/RL4VLM/RL4VLM/tree/main/gym-cards), [WebShop](https://github.com/princeton-nlp/WebShop), and [AppWorld](https://github.com/stonybrooknlp/appworld). We extend our gratitude to the authors and contributors of these projects for their valuable work.
 
 We would also like to thank the following contributors for their specific improvements to this project: WebShop bug fix ([@YSLIU627](https://github.com/YSLIU627)), GSPO support ([@MakeKJ](https://github.com/MakeKJ)), Qwen3-VL support ([@FabianSchuetze](https://github.com/FabianSchuetze)).
 
-# Awesome Work Powered by verl-agent & GiGPO
+# Awesome Work Powered by SERL & GiGPO
 
 - [HGPO](https://arxiv.org/pdf/2602.22817): **Hierarchy-of-Groups** Policy Optimization for Long-Horizon Agentic Tasks. 
 - [Dr. MAS](https://arxiv.org/abs/2602.08847): Stable **end-to-end RL** post-training for **multi-agent LLM systems**. [![[code]](https://img.shields.io/github/stars/langfengQ/DrMAS)](https://github.com/langfengQ/DrMAS)
@@ -445,7 +445,7 @@ We would also like to thank the following contributors for their specific improv
 - [SPEAR](https://github.com/TencentYoutuResearch/SPEAR): **Self-imitation** with **Progressive Exploration** for Agentic Reinforcement Learning (ICLR 2026). [![[code]](https://img.shields.io/github/stars/TencentYoutuResearch/SPEAR)](https://github.com/TencentYoutuResearch/SPEAR/tree/main/)
 
 # Citation
-If you find `verl-agent` and `GiGPO` useful in your research or applications, we would appreciate it if you could cite our work:
+If you find `SERL` and `GiGPO` useful in your research or applications, we would appreciate it if you could cite our work:
 
 ```
 @article{feng2025group,
@@ -458,4 +458,4 @@ If you find `verl-agent` and `GiGPO` useful in your research or applications, we
 
 # Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=langfengQ/verl-agent&type=Date)](https://www.star-history.com/#langfengQ/verl-agent&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=langfengQ/SERL&type=Date)](https://www.star-history.com/#langfengQ/SERL&Date)

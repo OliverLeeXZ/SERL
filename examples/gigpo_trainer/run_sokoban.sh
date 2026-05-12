@@ -17,8 +17,8 @@ python3 -m examples.data_preprocess.prepare \
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=gigpo \
-    data.train_files=$HOME/data/verl-agent/visual/train.parquet \
-    data.val_files=$HOME/data/verl-agent/visual/test.parquet \
+    data.train_files=$HOME/data/serl/visual/train.parquet \
+    data.val_files=$HOME/data/serl/visual/test.parquet \
     data.train_batch_size=$train_data_size \
     data.val_batch_size=$val_data_size \
     data.max_prompt_length=1024 \
@@ -63,7 +63,7 @@ python3 -m verl.trainer.main_ppo \
     env.resources_per_worker.num_cpus=$num_cpus_per_env_worker \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='verl_agent_sokoban' \
+    trainer.project_name='serl_sokoban' \
     trainer.experiment_name='gigpo_qwen2.5_vl_3b' \
     trainer.n_gpus_per_node=2 \
     trainer.nnodes=1 \

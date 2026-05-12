@@ -1,6 +1,6 @@
 """
 Core functions to implement HGPO (History-based Group Policy Optimization) algorithms.
-Self-contained in recipe for upstream verl-agent submission.
+Self-contained in recipe for upstream SERL submission.
 """
 
 import numpy as np

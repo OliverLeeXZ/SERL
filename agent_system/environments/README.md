@@ -30,10 +30,10 @@ alfworld-play-tw
 ---
 
 ## 2. WebShop
-WebShop requires Python <=3.10, so begin by creating a new `verl-agent-webshop` environment
+WebShop requires Python <=3.10, so begin by creating a new `serl-webshop` environment
 ```bash
-conda create -n verl-agent-webshop python==3.10 -y
-conda activate verl-agent-webshop
+conda create -n serl-webshop python==3.10 -y
+conda activate serl-webshop
 ```
 
 Install WebShop
@@ -51,7 +51,7 @@ Verify that WebShop was installed correctly by running:
 python run_web_agent_text_env.py
 ```
 
-After WebShop is installed, return to the root directory of the repository and install the verl package in `verl-agent`:
+After WebShop is installed, return to the root directory of the repository and install the verl package in `SERL`:
 ```bash
 cd repo_root/
 pip3 install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
@@ -89,7 +89,7 @@ appworld install
 pip install -e .
 pip install vllm==0.8.5
 ```
-You can ignore the warning of incompatiblity for appworld, because we don't run appworld in `verl-agent` environment.
+You can ignore the warning of incompatiblity for appworld, because we don't run appworld in `SERL` environment.
 
 Create a dedicated conda environment `appworld` for the AppWorld server:
 ```bash

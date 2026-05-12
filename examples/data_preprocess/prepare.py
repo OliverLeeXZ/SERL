@@ -24,7 +24,7 @@ import argparse
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', default='visual', choices=['visual', 'text'])
-    parser.add_argument('--local_dir', default='~/data/verl-agent/')
+    parser.add_argument('--local_dir', default='~/data/serl/')
     parser.add_argument('--hdfs_dir', default=None)
     parser.add_argument('--train_data_size', default=256, type=int)
     parser.add_argument('--val_data_size', default=256, type=int)
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     """
     **NOTE**: This is a frequently asked question.
     We do NOT use the data in 'hiyouga/geometry3k', instead we only use it to indicate the modality and the data size.
-    See details: https://github.com/langfengQ/verl-agent?tab=readme-ov-file#2-data-preparation
+    See details: https://github.com/langfengQ/SERL?tab=readme-ov-file#2-data-preparation
     """
 
     dataset = datasets.load_dataset(data_source)

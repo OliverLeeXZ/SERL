@@ -22,8 +22,8 @@ python3 -m examples.data_preprocess.prepare \
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
-    data.train_files=$HOME/data/verl-agent/text/train.parquet \
-    data.val_files=$HOME/data/verl-agent/text/test.parquet \
+    data.train_files=$HOME/data/serl/text/train.parquet \
+    data.val_files=$HOME/data/serl/text/test.parquet \
     data.train_batch_size=$train_data_size \
     data.val_batch_size=$val_data_size \
     data.max_prompt_length=2048 \
@@ -67,7 +67,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.resume_mode='auto' \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='verl_agent_alfworld' \
+    trainer.project_name='serl_alfworld' \
     trainer.experiment_name='gspo_qwen2.5_1.5b' \
     trainer.n_gpus_per_node=2 \
     trainer.nnodes=1 \

@@ -1,6 +1,6 @@
 # HGPO: Hierarchy-of-Groups Policy Optimization for Long-horizon Agentic Tasks ICLR 2026
 
-This repository provides a **HGPO (Hierarchy-of-Groups Policy Optimization for Long-horizon Agentic Tasks)** recipe for verl-agent, used for multi-turn agentic RL.
+This repository provides a **HGPO (Hierarchy-of-Groups Policy Optimization for Long-horizon Agentic Tasks)** recipe for SERL, used for multi-turn agentic RL.
 
 ![Motivation](illustration.png)
 
@@ -70,7 +70,7 @@ Use together with env options such as `env.history_length` and `env.rollout.n` (
 python3 -m examples.data_preprocess.prepare --mode 'text' --train_data_size 16 --val_data_size 128
 ```
 
-Paths are set in the scripts via `data.train_files` / `data.val_files`; defaults are `$HOME/data/verl-agent/text/train.parquet` and `$HOME/data/verl-agent/text/test.parquet`.
+Paths are set in the scripts via `data.train_files` / `data.val_files`; defaults are `$HOME/data/serl/text/train.parquet` and `$HOME/data/serl/text/test.parquet`.
 
 ### AlfWorld
 
@@ -120,7 +120,7 @@ bash recipe/hgpo/run_qwen2.5_7b_webshop_eval.sh
 
 ## Upstream dependencies (recipe self-contained parts)
 
-This recipe is self-contained under `recipe/hgpo/` for HGPO logic and trainer extensions when submitting to upstream verl-agent:
+This recipe is self-contained under `recipe/hgpo/` for HGPO logic and trainer extensions when submitting to upstream SERL:
 
 | File | Description |
 |------|-------------|
@@ -134,7 +134,7 @@ If not included upstream, you may also need:
 
 ## Related links
 
-- [verl-agent](https://github.com/langfengQ/verl-agent)
+- [SERL](https://github.com/langfengQ/SERL)
 - [GiGPO paper](https://arxiv.org/abs/2505.10978)
 
 ```bibtex

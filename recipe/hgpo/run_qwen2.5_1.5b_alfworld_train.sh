@@ -33,8 +33,8 @@ python3 -m recipe.hgpo.main_hgpo \
     algorithm.hgpo.mode=$mode \
     algorithm.hgpo.length_weight_alpha=$length_weight_alpha \
     algorithm.hgpo.base_group=$base_group \
-    data.train_files=$HOME/data/verl-agent/text/train.parquet \
-    data.val_files=$HOME/data/verl-agent/text/test.parquet \
+    data.train_files=$HOME/data/serl/text/train.parquet \
+    data.val_files=$HOME/data/serl/text/test.parquet \
     data.train_batch_size=$train_data_size \
     data.val_batch_size=$val_data_size \
     data.max_prompt_length=4096 \
