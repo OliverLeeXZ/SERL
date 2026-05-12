@@ -47,7 +47,6 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
 - [2025.09] `GiGPO` is now supported by [ROLL](https://github.com/alibaba/ROLL)! [[Document](https://alibaba.github.io/ROLL/docs/English/UserGuide/agentic/agentic_GiGPO)] [[Train Curves](https://github.com/alibaba/ROLL/issues/173#issuecomment-3332106534)].
 - [2025.09] `verl-agent`-style training pipeline is now supported by [OpenManus-RL](https://github.com/OpenManus/OpenManus-RL)!
 - [2025.09] [GiGPO](https://arxiv.org/abs/2505.10978) accepted at [NeurIPS 2025](https://neurips.cc/)! 🎉🎉🎉
-- [2025.08] Add **Search-R1 experiments** and **similarity-based GiGPO**! Check out GiGPO's superior performance in Search-R1 experiments [here](#results).
 - [2025.07] `GiGPO` & `verl-agent` talks at [Agent for SWE meetup](https://lu.ma/e498qhsi) by LF AI & Data Singapore on 7/11.
 - [2025.07] Add modular memory manager. See [here](./agent_system/memory).
 - [2025.06] ***Major update***: Merge all features from the latest [veRL](https://github.com/volcengine/verl). For example, `verl-agent` now supports Qwen3, LoRA, REINFORCE++, and more. Feel free to explore!
@@ -82,10 +81,9 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
   - [Install Supported Environments](#install-supported-environments)  
     - [1. ALFWorld](#1-alfworld)  
     - [2. WebShop](#2-webshop)
-    - [3. Search](#3-search)  
-    - [4. Sokoban](#4-sokoban)  
-    - [5. Gym Cards](#5-gym-cards)  
-    - [6. AppWorld (Experimental)](#6-appworld-experimental)  
+    - [3. Sokoban](#3-sokoban)  
+    - [4. Gym Cards](#4-gym-cards)  
+    - [5. AppWorld (Experimental)](#5-appworld-experimental)  
 - [Run Examples](#run-examples)  
   - [RL Training](#rl-training)  
     - [1. GiGPO](#1-gigpo)  
@@ -119,7 +117,7 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
 
 - **Scalable for Very Long-Horizon Optimization**
 
-  Prior works like [RAGEN](https://github.com/RAGEN-AI/RAGEN) and [Search-R1](https://github.com/PeterGriffinJin/Search-R1) concatenate the entire history of states and responses. This causes the context length to grow rapidly with the number of turns, making them difficult to scale to long-horizon scenarios. In contrast, `verl-agent` constructs inputs step-by-step. Each input is concise and customizable. This design keeps the context length almost constant over time, making `verl-agent` highly scalable for long-horizon scenarios (e.g., 30–50 steps in ALFWorld) without running into token limits or inefficiency.
+  Prior works like [RAGEN](https://github.com/RAGEN-AI/RAGEN) concatenate the entire history of states and responses. This causes the context length to grow rapidly with the number of turns, making them difficult to scale to long-horizon scenarios. In contrast, `verl-agent` constructs inputs step-by-step. Each input is concise and customizable. This design keeps the context length almost constant over time, making `verl-agent` highly scalable for long-horizon scenarios (e.g., 30–50 steps in ALFWorld) without running into token limits or inefficiency.
   
 - **Parallelized Gym-Style Environments and Group Environments**
 
@@ -139,7 +137,7 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
 
 - **Rich Suite of Environments**
   
-  `verl-agent` offers a diverse set of interactive environments including [Search-R1](https://github.com/PeterGriffinJin/Search-R1) experiment, embodied AI environments like [ALFWorld](https://github.com/alfworld/alfworld), visual games such as [Sokoban](https://github.com/mpSchrader/gym-sokoban) and [Gym Cards](https://github.com/RL4VLM/RL4VLM/blob/main/gym-cards/README.md), and digital interface control tasks like [WebShop](https://github.com/princeton-nlp/WebShop) and [AppWorld](https://github.com/stonybrooknlp/appworld/) (experimental). 
+  `verl-agent` offers a diverse set of interactive environments including embodied AI environments like [ALFWorld](https://github.com/alfworld/alfworld), visual games such as [Sokoban](https://github.com/mpSchrader/gym-sokoban) and [Gym Cards](https://github.com/RL4VLM/RL4VLM/blob/main/gym-cards/README.md), and digital interface control tasks like [WebShop](https://github.com/princeton-nlp/WebShop) and [AppWorld](https://github.com/stonybrooknlp/appworld/) (experimental). 
 
 - **Diverse RL Algorithms**
 
@@ -182,15 +180,6 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
       <td>2025.03</td><td>R1-Instruct</td><td>27.0</td><td>53.7</td><td>19.9</td><td>23.7</td><td>29.2</td><td>7.2</td><td>29.3</td><td>27.1</td>
     </tr>
     <tr>
-      <td>2025.03</td><td>Search-R1</td><td>34.1</td><td>54.5</td><td>37.8</td><td>32.4</td><td>31.9</td><td>10.3</td><td>26.4</td><td>32.5</td>
-    </tr>
-    <tr>
-      <td>2025.05</td><td>ZeroSearch</td><td>41.4</td><td>57.4</td><td>44.8</td><td>27.4</td><td>30.0</td><td>9.8</td><td>11.1</td><td>31.7</td>
-    </tr>
-    <tr>
-      <td>2025.05</td><td>StepSearch</td><td>-</td><td>-</td><td>-</td><td>34.5</td><td>32.0</td><td>17.4</td><td>34.4</td><td>-</td>
-    </tr>
-    <tr>
       <td>2025.05</td><td><b>GiGPO</b><a href="https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/1dd48ymw" target="_blank">
       <img src="https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb" alt="wandb link"/>
     </a></td><td>42.0</td><td>59.5</td><td>42.4</td><td>36.9</td><td>37.0</td><td>12.6</td><td>64.1</td><td>42.1</td>
@@ -200,15 +189,6 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
     </tr>
     <tr>
       <td>2025.03</td><td>R1-Instruct</td><td>21.0</td><td>44.9</td><td>17.1</td><td>20.8</td><td>27.5</td><td>6.0</td><td>19.2</td><td>22.4</td>
-    </tr>
-    <tr>
-      <td>2025.03</td><td>Search-R1</td><td>39.3</td><td>61.0</td><td>39.7</td><td>37.0</td><td>40.1</td><td>14.6</td><td>36.8</td><td>38.5</td>
-    </tr>
-    <tr>
-      <td>2025.05</td><td>ZeroSearch</td><td>43.6</td><td>61.8</td><td>51.5</td><td>34.6</td><td>35.2</td><td>18.4</td><td>27.8</td><td>39.1</td>
-    </tr>
-    <tr>
-      <td>2025.05</td><td>StepSearch</td><td>-</td><td>-</td><td>-</td><td>38.6</td><td>36.6</td><td>22.6</td><td>40.0</td><td>-</td>
     </tr>
     <tr>
       <td>2025.05</td><td><b>GiGPO</b><a href="https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/1dd48ymw" target="_blank">
@@ -288,67 +268,14 @@ The warnings can be safely ignored.
 
 ---
 
-### 3. Search
-```bash
-cd ./agent_system/environments/env_package/search/third_party
-pip install -e .
-pip install gym==0.26.2
-```
-
-Prepare dataset (data will be saved at `~/data/searchR1_processed_direct`):
-```bash
-cd repo_root/
-python examples/data_preprocess/preprocess_search_r1_dataset.py
-```
-
-
-Since faiss-gpu is not available via pip, we setup a separate conda environment for the local retrieval server. Running this server will use around 6GB of GPU memory per GPU, so make sure to account for this in your training run configuration. Build Retriever environments:
-```bash
-# Create and activate the retriever environment with Python 3.10
-conda create -n retriever python=3.10 -y
-conda activate retriever
-
-# Install PyTorch (with GPU support) and related libraries
-conda install numpy==1.26.4 # needed to stop incompatible version of numpy from being installed via pip
-pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
-
-# Install other Python packages
-pip install transformers datasets pyserini huggingface_hub
-
-# Install the GPU version of faiss
-conda install faiss-gpu==1.8.0 -c pytorch -c nvidia -y
-
-# Install the API service framework
-pip install uvicorn fastapi
-```
-
-Download the index:
-```bash
-conda activate retriever
-
-local_dir=~/data/searchR1
-python examples/search/searchr1_download.py --local_dir $local_dir
-cat $local_dir/part_* > $local_dir/e5_Flat.index
-gzip -d $local_dir/wiki-18.jsonl.gz
-```
-
-Start the local flat e5 retrieval server: 
-```bash
-conda activate retriever
-
-# redirect the output to a file to avoid cluttering the terminal
-# we have observed outputting to the terminal causing spikes in server response times
-bash examples/search/retriever/retrieval_launch.sh > retrieval_server.log 
-```
-
-### 4. Sokoban
+### 3. Sokoban
 ```bash
 pip install matplotlib
 pip install gym==0.26.2
 pip install gym_sokoban==0.0.6
 ```
 ---
-### 5. Gym Cards
+### 4. Gym Cards
 
 ```bash
 cd repo_root/
@@ -357,7 +284,7 @@ pip3 install gymnasium==0.29.1
 pip3 install stable-baselines3==2.6.0
 ```
 ---
-### 6. AppWorld (Experimental)
+### 5. AppWorld (Experimental)
 Install AppWorld package
 ```bash
 cd repo_root/
@@ -464,7 +391,7 @@ bash examples/prompt_agent/run_gpt4o_agent.sh
 Developers are encouraged to extend this module with custom memory strategies, such as dynamic summarization, selective memory retention, or external knowledge integration, to improve the handling of long-horizon interaction histories.
 
 ## 2. Data Preparation
-For most environments (e.g., AFLWorld, WebShop, Sokoban), we only use data preparation to indicate the modality, either "text" or "visual". For example, if the task is purely text-based, the data will just be an empty string "". If it involves visual input, it will be "\<image\>". As for agent input (including task instruction, observation and prompt), we follow the classical RL pipeline. That means the input of LLM agent comes from the environment's feedback through `env.step()`. In the case of search-r1 experiments where tasks are drawn from a dataset, we leverage the [env_kwargs](./examples/data_preprocess/preprocess_search_r1_dataset.py#L90) parameter to pass tasks into the environment, using: [envs.reset(kwargs=gen_batch.non_tensor_batch.pop('env_kwargs', None))](./agent_system/multi_turn_rollout/rollout_loop.py#L301).
+For most environments (e.g., AFLWorld, WebShop, Sokoban), we only use data preparation to indicate the modality, either "text" or "visual". For example, if the task is purely text-based, the data will just be an empty string "". If it involves visual input, it will be "\<image\>". As for agent input (including task instruction, observation and prompt), we follow the classical RL pipeline. That means the input of LLM agent comes from the environment's feedback through `env.step()`.
 
 ## 3. Customize Your Own Prompts  
 We adopt a simple and minimal prompt format in our implementation. For example, in the WebShop environment:
@@ -502,7 +429,7 @@ Example contributions include:
 # Acknowledgement
 
 `verl-agent` codebase is built upon [veRL](https://github.com/volcengine/verl). 
-The supported environments are adapted from [ALFWorld](https://github.com/alfworld/alfworld), [Sokoban](https://github.com/mpSchrader/gym-sokoban), [SkyRL-Gym](https://github.com/NovaSky-AI/SkyRL/tree/main/skyrl-gym), [Search-R1](https://github.com/PeterGriffinJin/Search-R1), [Gym Cards](https://github.com/RL4VLM/RL4VLM/tree/main/gym-cards), [WebShop](https://github.com/princeton-nlp/WebShop), and [AppWorld](https://github.com/stonybrooknlp/appworld). We extend our gratitude to the authors and contributors of these projects for their valuable work.
+The supported environments are adapted from [ALFWorld](https://github.com/alfworld/alfworld), [Sokoban](https://github.com/mpSchrader/gym-sokoban), [SkyRL-Gym](https://github.com/NovaSky-AI/SkyRL/tree/main/skyrl-gym), [Gym Cards](https://github.com/RL4VLM/RL4VLM/tree/main/gym-cards), [WebShop](https://github.com/princeton-nlp/WebShop), and [AppWorld](https://github.com/stonybrooknlp/appworld). We extend our gratitude to the authors and contributors of these projects for their valuable work.
 
 We would also like to thank the following contributors for their specific improvements to this project: WebShop bug fix ([@YSLIU627](https://github.com/YSLIU627)), GSPO support ([@MakeKJ](https://github.com/MakeKJ)), Qwen3-VL support ([@FabianSchuetze](https://github.com/FabianSchuetze)).
 
