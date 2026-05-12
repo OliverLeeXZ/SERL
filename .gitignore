@@ -125,6 +125,7 @@ ENV/
 # local logs
 logs
 log
+tensorboard_log/
 
 # local rjob submission scripts
 rjob/

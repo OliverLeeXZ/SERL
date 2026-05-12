@@ -128,14 +128,22 @@ conda create -n serl-webshop python==3.10 -y
 conda activate serl-webshop
 ```
 
-Install WebShop data and dependencies:
+Install WebShop dependencies and data inside the bundled WebShop directory:
 
 ```bash
 cd ./agent_system/environments/env_package/webshop/webshop
-./setup.sh -d all
+./setup.sh -d small
 ```
 
-If `gdown` fails, visit `https://drive.google.com/`, get your Google Drive cookie, and paste it into `.cache/gdown/cookies.txt`. Manual download of the required files is also acceptable.
+The default SERL WebShop config uses the 1k WebShop split and expects these files to exist under `agent_system/environments/env_package/webshop/webshop/`:
+
+```text
+data/items_shuffle_1000.json
+data/items_ins_v2_1000.json
+search_engine/indexes/
+```
+
+Use `./setup.sh -d all` instead if you plan to run with `env.webshop.use_small=False`. If `gdown` fails, visit `https://drive.google.com/`, get your Google Drive cookie, and paste it into `.cache/gdown/cookies.txt`. Manual download of the required files is also acceptable, as long as the files are placed in the WebShop directory above and the search index has been built.
 
 After WebShop is installed, return to the SERL repository root and install the training dependencies in the same `serl-webshop` environment:
 

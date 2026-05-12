@@ -25,6 +25,39 @@ JUDGE_API_URL=${JUDGE_API_URL:-http://localhost:8000/v1}
 JUDGE_MODEL=${JUDGE_MODEL:-}
 JUDGE_API_KEY=${JUDGE_API_KEY:-}
 
+WEBSHOP_ROOT=${SERL_ROOT}/agent_system/environments/env_package/webshop/webshop
+WEBSHOP_REL=agent_system/environments/env_package/webshop/webshop
+
+check_webshop_resources() {
+    local missing=0
+    local required=(
+        "data/items_shuffle_1000.json"
+        "data/items_ins_v2_1000.json"
+        "search_engine/indexes"
+    )
+
+    for path in "${required[@]}"; do
+        if [ ! -e "${WEBSHOP_ROOT}/${path}" ]; then
+            echo "Missing WebShop resource: ${WEBSHOP_REL}/${path}" >&2
+            missing=1
+        fi
+    done
+
+    if [ "${missing}" -ne 0 ]; then
+        cat >&2 <<EOF
+WebShop resources are not prepared. Run:
+
+  cd ${WEBSHOP_REL}
+  ./setup.sh -d small
+
+Use './setup.sh -d all' if you plan to run with env.webshop.use_small=False.
+EOF
+        exit 1
+    fi
+}
+
+check_webshop_resources
+
 mkdir -p "${OUTPUT_ROOT}/checkpoints" "${OUTPUT_ROOT}/rollout"
 
 COMMON_ARGS=(
