@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/serl/SERL%20ICON.png" alt="SERL logo" width="86%">
+  <img src="./docs/serl/serl-icon-green.png" alt="SERL logo" width="86%">
 </p>
 
 # SERL: Selective Hindsight Distillation for Long-Horizon LLM Agents
@@ -346,6 +346,10 @@ The scripts expose common settings through environment variables:
 | `N_GPUS_PER_NODE` | `8` |
 | `TENSOR_MODEL_PARALLEL_SIZE` | `2` |
 | `GROUP_SIZE` | `8` |
+
+## 👥 Contributors
+
+- LyuTianyi
 
 ## ✏️ Citation
 
