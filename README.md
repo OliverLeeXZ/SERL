@@ -11,6 +11,13 @@
   <img src="https://img.shields.io/badge/Base-veRL-64748b.svg" alt="veRL">
 </p>
 
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="arXiv"></a>
+  <a href="#"><img src="https://img.shields.io/badge/GitHub-Code-181717.svg" alt="GitHub"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Twitter%2FX-Thread-000000.svg" alt="Twitter/X"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Hugging%20Face-Project-ffcc4d.svg" alt="Hugging Face"></a>
+</p>
+
 SERL is a reinforcement-learning recipe for text-based LLM agents. It uses multi-feedback from agent-environment rollouts to build a teacher signal, then applies that signal selectively to action tokens while leaving chain-of-thought and formatting tokens under the original GRPO objective.
 
 This release focuses on two long-horizon agent environments:
@@ -23,19 +30,18 @@ Main entrypoints:
 - `recipe/serl/run_alfworld.sh`
 - `recipe/serl/run_webshop.sh`
 
-## News
+## 📰 News
 
-- **[2026.05]** Initial SERL training recipe with ALFWorld and WebShop launch scripts.
-- **[2026.05]** Multi-feedback sources, anchor-level feedback, LLM-judged feedback, and two trajectory formats are supported.
+- **[2026.05]** SERL is released with training recipes for ALFWorld and WebShop.
 
-## Highlights
+## ✨ Highlights
 
 1. **Multi-feedback hindsight signal.** SERL can condition the teacher on immediate feedback, next observation, future trajectory, successful trajectory, current trajectory, or combinations of these signals.
 2. **Action-token-only distillation.** The teacher signal reweights action tokens, while thinking tokens keep the normal GRPO full-response credit. This matches the method design in which feedback should guide what the agent does, not overwrite every reasoning token.
 3. **Flexible feedback granularity.** SERL supports step-level feedback and anchor-level variants that group semantically related states before applying hindsight feedback.
 4. **Practical agent recipes.** The repository keeps a compact open-source surface: one ALFWorld script, one WebShop script, and a single SERL config.
 
-## Method Overview
+## 🧭 Method Overview
 
 SERL targets the sparse-reward setting common in interactive agent tasks. During rollout, each sampled trajectory contains states, actions, task rewards, and immediate feedback. SERL builds privileged hindsight contexts from these records and asks a synchronized teacher policy to score the student's action tokens under that feedback.
 
@@ -56,7 +62,7 @@ Original figure PDFs are kept for high-resolution use:
 - [Figure 1 PDF](./docs/serl/Figure1.pdf)
 - [Figure 2 PDF](./docs/serl/Figure2.pdf)
 
-## Repository Layout
+## 🗂️ Repository Layout
 
 ```text
 recipe/serl/                         SERL training recipe, config, trainer, and launch scripts
@@ -68,9 +74,9 @@ examples/data_preprocess/prepare.py  Text-mode parquet preparation
 docs/serl/                           SERL logo and paper figures
 ```
 
-## Installation
+## ⚙️ Installation
 
-### Base Runtime
+### 🧱 Base Runtime
 
 Create the base SERL environment from the repository root:
 
@@ -85,7 +91,7 @@ pip install -e .
 
 Environment packages may have conflicting Python and dependency requirements. Use a separate conda environment for each backend when needed.
 
-### ALFWorld
+### 🧪 ALFWorld
 
 Install ALFWorld:
 
@@ -113,7 +119,7 @@ Verify the text-game installation:
 alfworld-play-tw
 ```
 
-### WebShop
+### 🛒 WebShop
 
 WebShop requires Python `<=3.10`, so create a dedicated environment:
 
@@ -143,7 +149,7 @@ pip3 install vllm==0.8.2
 
 Warnings about `spacy` or `weasel` requiring an older `typer` can be ignored for the WebShop training scripts.
 
-## Quickstart
+## 🚀 Quickstart
 
 Prepare the text-mode parquet files. The parquet files provide the text modality marker and dataset size. Task observations, valid actions, rewards, and feedback are produced online by the environment during rollout.
 
@@ -219,7 +225,7 @@ bash recipe/serl/run_webshop.sh \
   actor_rollout_ref.actor.optim.lr=1e-6
 ```
 
-## Supported Feedback Modes
+## 💬 Supported Feedback Modes
 
 Set the feedback source with `SAMPLING_MODE=<mode>`. Implementation names use `successful_sample` for a successful trajectory reference.
 
@@ -243,7 +249,7 @@ SAMPLING_MODE=successful_sample_immediate_feedback bash recipe/serl/run_webshop.
 SAMPLING_MODE=successful_sample_future_trajectory_next_observation bash recipe/serl/run_webshop.sh
 ```
 
-## Anchor-Level Feedback
+## ⚓ Anchor-Level Feedback
 
 Anchor placement is enabled with the `anchor_` prefix. To disable anchor placement, use the corresponding non-anchor mode.
 
@@ -277,7 +283,7 @@ bash recipe/serl/run_webshop.sh \
   actor_rollout_ref.actor.serl.anchor_similarity_thresh=0.95
 ```
 
-## LLM-Judged Feedback
+## ⚖️ LLM-Judged Feedback
 
 SERL also supports judged feedback, where an OpenAI-compatible judge model summarizes a trajectory into concise guidance before teacher scoring.
 
@@ -296,7 +302,7 @@ SAMPLING_MODE=judge_current_traj \
 bash recipe/serl/run_alfworld.sh
 ```
 
-## Trajectory Format
+## 🔀 Trajectory Format
 
 SERL supports two trajectory organization formats:
 
@@ -312,7 +318,7 @@ TRAJECTORY_FORMAT=response bash recipe/serl/run_alfworld.sh
 TRAJECTORY_FORMAT=observation_action bash recipe/serl/run_webshop.sh
 ```
 
-## Default Training Settings
+## 📊 Default Training Settings
 
 | Setting | ALFWorld | WebShop |
 | --- | ---: | ---: |
@@ -341,11 +347,10 @@ The scripts expose common settings through environment variables:
 | `TENSOR_MODEL_PARALLEL_SIZE` | `2` |
 | `GROUP_SIZE` | `8` |
 
-## Citation
+## ✏️ Citation
 
 BibTeX will be added when the paper metadata is public.
 
-## Acknowledgement
+## 🙏 Acknowledgement
 
 SERL is implemented on top of [veRL](https://github.com/volcengine/verl). The environment integrations build on [ALFWorld](https://github.com/alfworld/alfworld) and [WebShop](https://github.com/princeton-nlp/WebShop). We thank the authors and contributors of these projects.
-
