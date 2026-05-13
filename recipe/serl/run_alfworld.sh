@@ -12,7 +12,6 @@ if [ $# -gt 0 ] && [[ "$1" != *=* ]]; then
     shift
 fi
 
-export VLLM_ATTENTION_BACKEND=${VLLM_ATTENTION_BACKEND:-XFORMERS}
 export HYDRA_FULL_ERROR=${HYDRA_FULL_ERROR:-1}
 export ALFWORLD_DATA=${ALFWORLD_DATA:-$HOME/.cache/alfworld}
 
