@@ -107,6 +107,12 @@ Download PDDL files, game files, and the pretrained MaskRCNN detector:
 alfworld-download -f
 ```
 
+SERL reads ALFWorld games from `ALFWORLD_DATA`. If you install the data outside the default `~/.cache/alfworld`, export the path before launching:
+
+```bash
+export ALFWORLD_DATA=/path/to/alfworld
+```
+
 Use `--extra` if you also want pretrained checkpoints and seq2seq data:
 
 ```bash

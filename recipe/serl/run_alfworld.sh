@@ -14,6 +14,7 @@ fi
 
 export VLLM_ATTENTION_BACKEND=${VLLM_ATTENTION_BACKEND:-XFORMERS}
 export HYDRA_FULL_ERROR=${HYDRA_FULL_ERROR:-1}
+export ALFWORLD_DATA=${ALFWORLD_DATA:-$HOME/.cache/alfworld}
 
 MODEL_PATH=${MODEL_PATH:-Qwen/Qwen2.5-7B-Instruct}
 TRAIN_FILE=${TRAIN_FILE:-$HOME/data/serl/text/train.parquet}
@@ -24,6 +25,30 @@ TRAJECTORY_FORMAT=${TRAJECTORY_FORMAT:-response}
 JUDGE_API_URL=${JUDGE_API_URL:-http://localhost:8000/v1}
 JUDGE_MODEL=${JUDGE_MODEL:-}
 JUDGE_API_KEY=${JUDGE_API_KEY:-}
+
+check_alfworld_resources() {
+    local missing=0
+    for split in train valid_seen; do
+        local split_dir="${ALFWORLD_DATA}/json_2.1.1/${split}"
+        if [ ! -d "${split_dir}" ] || ! find "${split_dir}" -name game.tw-pddl -print -quit | grep -q .; then
+            echo "Missing ALFWorld games under ${split_dir}" >&2
+            missing=1
+        fi
+    done
+
+    if [ "${missing}" -ne 0 ]; then
+        cat >&2 <<EOF
+ALFWorld resources are not prepared. Run:
+
+  alfworld-download -f
+
+or set ALFWORLD_DATA to a prepared ALFWorld cache directory before launching.
+EOF
+        exit 1
+    fi
+}
+
+check_alfworld_resources
 
 mkdir -p "${OUTPUT_ROOT}/checkpoints" "${OUTPUT_ROOT}/rollout"
 
@@ -75,7 +100,7 @@ COMMON_ARGS=(
     "env.seed=${SEED:-0}"
     "env.max_steps=${MAX_STEPS:-50}"
     "env.rollout.n=${GROUP_SIZE:-8}"
-    "env.resources_per_worker.num_cpus=${NUM_CPUS_PER_ENV_WORKER:-0.1}"
+    "env.resources_per_worker.num_cpus=${NUM_CPUS_PER_ENV_WORKER:-0.2}"
     "trainer.default_local_dir=${OUTPUT_ROOT}/checkpoints"
     "trainer.rollout_data_dir=${OUTPUT_ROOT}/rollout"
     "trainer.critic_warmup=${CRITIC_WARMUP:-0}"
